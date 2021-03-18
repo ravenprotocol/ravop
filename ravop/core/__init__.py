@@ -4,7 +4,7 @@ import numpy as np
 from ravcom import dump_data, RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY
 from ravcom import ravcom
 
-from ravop import globals as g
+from ravcom import globals as g
 from ravop.enums import *
 
 
