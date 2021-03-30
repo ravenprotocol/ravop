@@ -185,8 +185,8 @@ class Op(object):
     def inv(self, **kwargs):
         return inv(self, **kwargs)
 
-    def gather(self, **kwargs):
-        return gather(self, **kwargs)
+    def gather(self, op, **kwargs):
+        return gather(self, op, **kwargs)
 
     def reverse(self, **kwargs):
         return reverse(self, **kwargs)
@@ -200,8 +200,8 @@ class Op(object):
     def slice(self, **kwargs):
         return slice(self, **kwargs)
 
-    def find_indices(self, **kwargs):
-        return find_indices(self, **kwargs)
+    def find_indices(self, op, **kwargs):
+        return find_indices(self, op, **kwargs)
 
     # Comparison Ops
     def greater(self, op1, **kwargs):
@@ -683,8 +683,8 @@ def inv(op, **kwargs):
     return __create_math_op2(op, Operators.INVERSE.value, **kwargs)
 
 
-def gather(op, **kwargs):
-    return __create_math_op2(op, Operators.GATHER.value, **kwargs)
+def gather(op, op2, **kwargs):
+    return __create_math_op(op, op2, Operators.GATHER.value, **kwargs)
 
 
 def reverse(op, **kwargs):
@@ -703,8 +703,8 @@ def slice(op, **kwargs):
     return __create_math_op2(op, Operators.SLICE.value, **kwargs)
 
 
-def find_indices(op, **kwargs):
-    return __create_math_op2(op, Operators.FIND_INDICES.value, **kwargs)
+def find_indices(op, op2, **kwargs):
+    return __create_math_op(op, op2, Operators.FIND_INDICES.value, **kwargs)
 
 
 # Comparison
