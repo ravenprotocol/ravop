@@ -53,6 +53,7 @@ class Operators(Enum):
     TILE = "tile"
     SLICE = "slice"
     FIND_INDICES = "find_indices"
+    SHAPE = "shape"
 
     # Comparison Operators
     GREATER = "greater"
@@ -82,6 +83,9 @@ class Operators(Enum):
     WHERE = "where"
     SIGN = "sign"
     FOREACH = "foreach"
+
+    # Data Preprocessing
+    ONE_HOT_ENCODING = "one_hot_encoding"
 
 
 class TFJSOperators(Enum):

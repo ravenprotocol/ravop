@@ -203,6 +203,9 @@ class Op(object):
     def find_indices(self, op, **kwargs):
         return find_indices(self, op, **kwargs)
 
+    def shape_(self, **kwargs):
+        return shape(self, **kwargs)
+
     # Comparison Ops
     def greater(self, op1, **kwargs):
         return greater(self, op1, **kwargs)
@@ -326,6 +329,8 @@ class Op(object):
                                                                                           self._op_db.operator,
                                                                                           self.output,
                                                                                           self.status)
+    def __call__(self, *args, **kwargs):
+        return self.output
 
 
 class Scalar(Op):
@@ -367,6 +372,9 @@ class Scalar(Op):
     def __str__(self):
         return "Scalar Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(self.id, self.output,
                                                                             self.status, self.dtype)
+
+    def __call__(self, *args, **kwargs):
+        return self.output
 
 
 class Tensor(Op):
@@ -410,6 +418,9 @@ class Tensor(Op):
     def __str__(self):
         return "Tensor Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(self.id, self.output,
                                                                             self.status, self.dtype)
+
+    def __call__(self, *args, **kwargs):
+        return self.output
 
 
 class Data(object):
@@ -470,6 +481,9 @@ class Data(object):
 
     def __str__(self):
         return "Data:\nId:{}\nDtype:{}\n".format(self.id, self.dtype)
+
+    def __call__(self, *args, **kwargs):
+        return self.value
 
 
 class Graph(object):
@@ -707,6 +721,10 @@ def find_indices(op, op2, **kwargs):
     return __create_math_op(op, op2, Operators.FIND_INDICES.value, **kwargs)
 
 
+def shape(op, **kwargs):
+    return __create_math_op2(op, Operators.SHAPE.value, **kwargs)
+
+
 # Comparison
 def greater(op1, op2, **kwargs):
     return __create_math_op(op1, op2, Operators.GREATER.value, **kwargs)
@@ -796,6 +814,12 @@ def sign(op1, **kwargs):
 
 def foreach(op, **kwargs):
     return __create_math_op2(op, Operators.FOREACH.value, **kwargs)
+
+# Data Preprocessing
+
+
+def one_hot_encoding(op, **kwargs):
+    return __create_math_op2(op, Operators.ONE_HOT_ENCODING.value, **kwargs)
 
 
 def __create_math_op(op1, op2, operator, **kwargs):
