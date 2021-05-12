@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 from ravcom import dump_data, RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY
-from ravcom import ravcom
+from ravcom import ravdb
 
 from ravcom import globals as g
 from ravop.enums import *
@@ -30,7 +30,7 @@ class Op(object):
         self._op_db = None
 
         if id is not None:
-            self._op_db = ravcom.get_op(op_id=id)
+            self._op_db = ravdb.get_op(op_id=id)
             if self._op_db is None:
                 raise Exception("Invalid op id")
         else:
@@ -71,7 +71,7 @@ class Op(object):
             inputs = json.dumps(inputs)
             outputs = json.dumps(outputs)
 
-            op = ravcom.create_op(name=kwargs.get("name", None),
+            op = ravdb.create_op(name=kwargs.get("name", None),
                                   graph_id=g.graph_id,
                                   node_type=node_type,
                                   inputs=inputs,
@@ -277,7 +277,7 @@ class Op(object):
 
     def to_tensor(self):
         return Tensor(id=self.id)
-        # self._op_db = ravcom.refresh(self._op_db)
+        # self._op_db = ravdb.refresh(self._op_db)
         # if self._op_db.outputs is None or self._op_db.outputs == "null":
         #     return None
         #
@@ -286,7 +286,7 @@ class Op(object):
         # return Tensor(data.value)
 
     def to_scalar(self):
-        self._op_db = ravcom.refresh(self._op_db)
+        self._op_db = ravdb.refresh(self._op_db)
         if self._op_db.outputs is None or self._op_db.outputs == "null":
             return None
 
@@ -296,7 +296,7 @@ class Op(object):
 
     @property
     def output(self):
-        self._op_db = ravcom.refresh(self._op_db)
+        self._op_db = ravdb.refresh(self._op_db)
         if self._op_db.outputs is None or self._op_db.outputs == "null":
             return None
 
@@ -306,7 +306,7 @@ class Op(object):
 
     @property
     def output_dtype(self):
-        self._op_db = ravcom.refresh(self._op_db)
+        self._op_db = ravdb.refresh(self._op_db)
         if self._op_db.outputs is None or self._op_db.outputs == "null":
             return None
 
@@ -320,7 +320,7 @@ class Op(object):
 
     @property
     def status(self):
-        self._op_db = ravcom.refresh(self._op_db)
+        self._op_db = ravdb.refresh(self._op_db)
         return self._op_db.status
 
     def __str__(self):
@@ -428,7 +428,7 @@ class Data(object):
         self._data_db = None
 
         if id is not None:
-            self._data_db = ravcom.get_data(data_id=id)
+            self._data_db = ravdb.get_data(data_id=id)
             if self._data_db is None:
                 raise Exception("Invalid data id")
 
@@ -446,20 +446,20 @@ class Data(object):
                 raise Exception("Unable to create data")
 
     def __create(self, value, dtype):
-        data = ravcom.create_data(type=dtype)
+        data = ravdb.create_data(type=dtype)
 
         if dtype == "ndarray":
             file_path = dump_data(data.id, value)
             # Update file path
-            ravcom.update_data(data, file_path=file_path)
+            ravdb.update_data(data, file_path=file_path)
         elif dtype in ["int", "float"]:
-            ravcom.update_data(data, value=value)
+            ravdb.update_data(data, value=value)
 
         return data
 
     @property
     def value(self):
-        self._data_db = ravcom.refresh(self._data_db)
+        self._data_db = ravdb.refresh(self._data_db)
         if self.dtype == "ndarray":
             file_path = self._data_db.file_path
             value = np.load(file_path, allow_pickle=True)
@@ -476,7 +476,7 @@ class Data(object):
 
     @property
     def dtype(self):
-        self._data_db = ravcom.refresh(self._data_db)
+        self._data_db = ravdb.refresh(self._data_db)
         return self._data_db.type
 
     def __str__(self):
@@ -492,14 +492,14 @@ class Graph(object):
     def __init__(self, id=None, **kwargs):
         if id is None and g.graph_id is None:
             # Create a new graph
-            self._graph_db = ravcom.create_graph()
+            self._graph_db = ravdb.create_graph()
             g.graph_id = self._graph_db.id
         elif id is not None:
             # Get an existing graph
-            self._graph_db = ravcom.get_graph(graph_id=id)
+            self._graph_db = ravdb.get_graph(graph_id=id)
         elif g.graph_id is not None:
             # Get an existing graph
-            self._graph_db = ravcom.get_graph(graph_id=g.graph_id)
+            self._graph_db = ravdb.get_graph(graph_id=g.graph_id)
 
         # Raise an exception if there is no graph created
         if self._graph_db is None:
@@ -515,7 +515,7 @@ class Graph(object):
 
     @property
     def status(self):
-        self._graph_db = ravcom.refresh(self._graph_db)
+        self._graph_db = ravdb.refresh(self._graph_db)
         return self._graph_db.status
 
     @property
@@ -529,7 +529,7 @@ class Graph(object):
 
     def get_op_stats(self):
         """Get stats of all ops"""
-        ops = ravcom.get_graph_ops(graph_id=self.id)
+        ops = ravdb.get_graph_ops(graph_id=self.id)
 
         pending_ops = 0
         computed_ops = 0
@@ -552,11 +552,11 @@ class Graph(object):
                 "failed_ops": failed_ops}
 
     def clean(self):
-        ravcom.delete_graph_ops(self._graph_db.id)
+        ravdb.delete_graph_ops(self._graph_db.id)
 
     @property
     def ops(self):
-        ops = ravcom.get_graph_ops(self.id)
+        ops = ravdb.get_graph_ops(self.id)
         return [Op(id=op.id) for op in ops]
 
     def print_ops(self):
@@ -565,7 +565,7 @@ class Graph(object):
             print(op)
 
     def get_ops_by_name(self, op_name, graph_id=None):
-        ops = ravcom.get_ops_by_name(op_name=op_name, graph_id=graph_id)
+        ops = ravdb.get_ops_by_name(op_name=op_name, graph_id=graph_id)
         return [Op(id=op.id) for op in ops]
 
     def __str__(self):
@@ -826,7 +826,7 @@ def __create_math_op(op1, op2, operator, **kwargs):
     if op1 is None or op2 is None:
         raise Exception("Null Op")
 
-    op = ravcom.create_op(name=kwargs.get('name', None),
+    op = ravdb.create_op(name=kwargs.get('name', None),
                           graph_id=g.graph_id,
                           node_type=NodeTypes.MIDDLE.value,
                           inputs=json.dumps([op1.id, op2.id]),
@@ -852,7 +852,7 @@ def __create_math_op2(op1, operator, **kwargs):
     if op1 is None:
         raise Exception("Null Op")
 
-    op = ravcom.create_op(name=kwargs.get('name', None),
+    op = ravdb.create_op(name=kwargs.get('name', None),
                           graph_id=g.graph_id,
                           node_type=NodeTypes.MIDDLE.value,
                           inputs=json.dumps([op1.id]),
