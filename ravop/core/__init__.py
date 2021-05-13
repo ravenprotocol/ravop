@@ -23,6 +23,9 @@ def minus_one():
 def inf():
     return Scalar(np.inf)
 
+def pi():
+    return Scalar(np.pi)
+
 
 class Op(object):
     def __init__(self, id=None,
