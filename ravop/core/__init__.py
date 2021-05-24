@@ -2,9 +2,9 @@ import json
 
 import numpy as np
 from ravcom import dump_data, RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY
+from ravcom import globals as g
 from ravcom import ravdb
 
-from ravcom import globals as g
 from ravop.enums import *
 
 
@@ -22,6 +22,7 @@ def minus_one():
 
 def inf():
     return Scalar(np.inf)
+
 
 def pi():
     return Scalar(np.pi)
@@ -75,14 +76,14 @@ class Op(object):
             outputs = json.dumps(outputs)
 
             op = ravdb.create_op(name=kwargs.get("name", None),
-                                  graph_id=g.graph_id,
-                                  node_type=node_type,
-                                  inputs=inputs,
-                                  outputs=outputs,
-                                  op_type=op_type,
-                                  operator=operator,
-                                  status=status,
-                                  params=json.dumps(kwargs))
+                                 graph_id=g.graph_id,
+                                 node_type=node_type,
+                                 inputs=inputs,
+                                 outputs=outputs,
+                                 op_type=op_type,
+                                 operator=operator,
+                                 status=status,
+                                 params=json.dumps(kwargs))
             # Add op to queue
             if op.status != OpStatus.COMPUTED.value and op.status != OpStatus.FAILED.value:
                 if g.graph_id is None:
@@ -332,6 +333,7 @@ class Op(object):
                                                                                           self._op_db.operator,
                                                                                           self.output,
                                                                                           self.status)
+
     def __call__(self, *args, **kwargs):
         return self.output
 
@@ -818,6 +820,7 @@ def sign(op1, **kwargs):
 def foreach(op, **kwargs):
     return __create_math_op2(op, Operators.FOREACH.value, **kwargs)
 
+
 # Data Preprocessing
 
 
@@ -829,15 +832,24 @@ def __create_math_op(op1, op2, operator, **kwargs):
     if op1 is None or op2 is None:
         raise Exception("Null Op")
 
+    params = dict()
+    for key, value in kwargs.items():
+        if isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor):
+            params[key] = value.id
+        elif type(value).__name__ in ['int', 'float']:
+            params[key] = Scalar(value)
+        elif type(value).__name__ == 'str':
+            params[key] = value
+
     op = ravdb.create_op(name=kwargs.get('name', None),
-                          graph_id=g.graph_id,
-                          node_type=NodeTypes.MIDDLE.value,
-                          inputs=json.dumps([op1.id, op2.id]),
-                          outputs=json.dumps(None),
-                          op_type=OpTypes.BINARY.value,
-                          operator=operator,
-                          status=OpStatus.PENDING.value,
-                          params=json.dumps(kwargs))
+                         graph_id=g.graph_id,
+                         node_type=NodeTypes.MIDDLE.value,
+                         inputs=json.dumps([op1.id, op2.id]),
+                         outputs=json.dumps(None),
+                         op_type=OpTypes.BINARY.value,
+                         operator=operator,
+                         status=OpStatus.PENDING.value,
+                         params=json.dumps(params))
 
     # Add op to queue
     if op.status != OpStatus.COMPUTED.value and op.status != OpStatus.FAILED.value:
@@ -855,15 +867,24 @@ def __create_math_op2(op1, operator, **kwargs):
     if op1 is None:
         raise Exception("Null Op")
 
+    params = dict()
+    for key, value in kwargs.items():
+        if isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor):
+            params[key] = value.id
+        elif type(value).__name__ in ['int', 'float']:
+            params[key] = Scalar(value)
+        elif type(value).__name__ == 'str':
+            params[key] = value
+
     op = ravdb.create_op(name=kwargs.get('name', None),
-                          graph_id=g.graph_id,
-                          node_type=NodeTypes.MIDDLE.value,
-                          inputs=json.dumps([op1.id]),
-                          outputs=json.dumps(None),
-                          op_type=OpTypes.UNARY.value,
-                          operator=operator,
-                          status=OpStatus.PENDING.value,
-                          params=json.dumps(kwargs))
+                         graph_id=g.graph_id,
+                         node_type=NodeTypes.MIDDLE.value,
+                         inputs=json.dumps([op1.id]),
+                         outputs=json.dumps(None),
+                         op_type=OpTypes.UNARY.value,
+                         operator=operator,
+                         status=OpStatus.PENDING.value,
+                         params=json.dumps(params))
 
     # Add op to queue
     if op.status != OpStatus.COMPUTED.value and op.status != OpStatus.FAILED.value:
