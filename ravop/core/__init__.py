@@ -837,7 +837,7 @@ def __create_math_op(op1, op2, operator, **kwargs):
         if isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor):
             params[key] = value.id
         elif type(value).__name__ in ['int', 'float']:
-            params[key] = Scalar(value)
+            params[key] = Scalar(value).id
         elif type(value).__name__ == 'str':
             params[key] = value
 
@@ -872,7 +872,7 @@ def __create_math_op2(op1, operator, **kwargs):
         if isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor):
             params[key] = value.id
         elif type(value).__name__ in ['int', 'float']:
-            params[key] = Scalar(value)
+            params[key] = Scalar(value).id
         elif type(value).__name__ == 'str':
             params[key] = value
 
