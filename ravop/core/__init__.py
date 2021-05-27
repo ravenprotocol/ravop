@@ -113,6 +113,9 @@ class Op(object):
     def div(self, op, **kwargs):
         return div(self, op, **kwargs)
 
+    def pos(self, **kwargs):
+        return pos(self, **kwargs)
+
     def neg(self, **kwargs):
         return neg(self, **kwargs)
 
@@ -336,6 +339,42 @@ class Op(object):
 
     def __call__(self, *args, **kwargs):
         return self.output
+
+    def __add__(self, other):
+        return add(self, other)
+
+    def __sub__(self, other):
+        return sub(self, other)
+
+    def __mul__(self, other):
+        return mul(self, other)
+
+    def __pos__(self):
+        return pos(self)
+
+    def __neg__(self):
+        return neg(self)
+
+    def __abs__(self):
+        return abs(self)
+
+    def __invert__(self):
+        return inv(self)
+
+    def __lt__(self, other):
+        return less(self, other)
+
+    def __le__(self, other):
+        return less_equal(self, other)
+
+    def __eq__(self, other):
+        return equal(self, other)
+
+    def __ne__(self, other):
+        return not_equal(self, other)
+
+    def __ge__(self, other):
+        return greater_equal(self, other)
 
 
 class Scalar(Op):
@@ -599,6 +638,10 @@ def mul(op1, op2, **kwargs):
 
 def div(op1, op2, **kwargs):
     return __create_math_op(op1, op2, Operators.DIVISION.value, **kwargs)
+
+
+def pos(op, **kwargs):
+    return __create_math_op2(op, Operators.POSITIVE.value, **kwargs)
 
 
 def neg(op, **kwargs):

@@ -20,6 +20,7 @@ class Operators(Enum):
     SUBTRACTION = "subtraction"
     MULTIPLICATION = "multiplication"
     DIVISION = "division"
+    POSITIVE = "positive"
     NEGATION = "negation"
     EXPONENTIAL = "exponential"
     NATURAL_LOG = "natural_log"
