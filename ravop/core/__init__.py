@@ -44,7 +44,7 @@ class Op(object):
                 raise Exception("Invalid parameters")
 
     def wait(self):
-        while self.status != "computed" or self.status != "failed":
+        while self._op_db.status != "computed" or self._op_db.status != "failed":
             pass
 
     def create(self, operator, inputs=None, outputs=None, **kwargs):
@@ -941,5 +941,8 @@ def __create_math_op2(op1, operator, **kwargs):
         else:
             q = RavQueue(name=QUEUE_LOW_PRIORITY)
             q.push(op.id)
+
+    from ravcom import inform_server
+    inform_server()
 
     return Op(id=op.id)
