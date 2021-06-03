@@ -44,6 +44,7 @@ class Op(object):
                 raise Exception("Invalid parameters")
 
     def wait(self):
+        self._op_db = ravdb.refresh(self._op_db)
         while self._op_db.status != "computed" or self._op_db.status != "failed":
             pass
 
