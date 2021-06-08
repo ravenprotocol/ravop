@@ -377,6 +377,17 @@ class Op(object):
     def __ge__(self, other):
         return greater_equal(self, other)
 
+    def __getitem__(self, item):
+        if type(item).__name__ == 'slice':
+            return self.slice(begin=item.start, size=item.stop - item.start)
+        elif type(item).__name__ == 'int':
+            return self.gather(Scalar(item))
+        elif type(item).__name__ == 'tuple':
+            var = self
+            for i in item:
+                var = var.gather(Scalar(i))
+            return var
+
 
 class Scalar(Op):
     def __init__(self, value, **kwargs):
