@@ -1,7 +1,7 @@
 import json
 
 import numpy as np
-from ravcom import dump_data, RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY
+from ravcom import dump_data, RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY, inform_server
 from ravcom import globals as g
 from ravcom import ravdb
 
@@ -43,10 +43,15 @@ class Op(object):
             else:
                 raise Exception("Invalid parameters")
 
-    def wait(self):
+    def eval(self):
+        print("Waiting...")
+        inform_server()
+
         self._op_db = ravdb.refresh(self._op_db)
-        while self._op_db.status != "computed" or self._op_db.status != "failed":
-            pass
+        while self._op_db.status in ["pending", "computing"]:
+            self._op_db = ravdb.refresh(self._op_db)
+
+        return self
 
     def create(self, operator, inputs=None, outputs=None, **kwargs):
         if (inputs is not None or outputs is not None) and operator is not None:
@@ -431,6 +436,9 @@ class Scalar(Op):
 
     def __call__(self, *args, **kwargs):
         return self.output
+
+    def __float__(self):
+        return float(self.output)
 
 
 class Tensor(Op):
@@ -953,8 +961,5 @@ def __create_math_op2(op1, operator, **kwargs):
         else:
             q = RavQueue(name=QUEUE_LOW_PRIORITY)
             q.push(op.id)
-
-    from ravcom import inform_server
-    inform_server()
 
     return Op(id=op.id)
