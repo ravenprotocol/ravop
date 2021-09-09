@@ -1,11 +1,28 @@
 import json
+import os
 
 import numpy as np
-from ravcom import dump_data, RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY, inform_server
+from ravcom import dump_data, RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY, inform_server, DATA_FILES_PATH, \
+    copy_data
 from ravcom import globals as g
 from ravcom import ravdb
 
 from ravop.enums import *
+
+
+def t(value, dtype="ndarray"):
+    """
+    To create scalars, tensors and other data types
+    """
+    if dtype == "ndarray":
+        if isinstance(value, int):
+            return Scalar(value)
+        elif isinstance(value, float):
+            return Scalar(value)
+        else:
+            return Tensor(value)
+    elif dtype == "file":
+        return File(value=value, dtype=dtype)
 
 
 def epsilon():
@@ -487,6 +504,27 @@ class Tensor(Op):
         return self.output
 
 
+class File(Op):
+    def __init__(self, value, **kwargs):
+        data = Data(value=value, dtype="file")
+        super().__init__(operator=Operators.LINEAR.value, inputs=None, outputs=[data.id], **kwargs)
+
+    @property
+    def dtype(self):
+        return "file"
+
+    @property
+    def shape(self):
+        return None
+
+    def __str__(self):
+        return "File Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(self.id, self.output,
+                                                                            self.status, self.dtype)
+
+    def __call__(self, *args, **kwargs):
+        return self.output
+
+
 class Data(object):
     def __init__(self, id=None, value=None, dtype=None, **kwargs):
         self._data_db = None
@@ -497,13 +535,15 @@ class Data(object):
                 raise Exception("Invalid data id")
 
         elif value is not None and dtype is not None:
-
-            if type(value).__name__ == "list":
-                value = np.array(value)
-            elif type(value).__name__ == "str":
-                x = json.loads(value)
-                if type(x).__name__ == "list":
+            if dtype == "ndarray":
+                if type(value).__name__ == "list":
                     value = np.array(value)
+                elif type(value).__name__ == "str":
+                    x = json.loads(value)
+                    if type(x).__name__ == "list":
+                        value = np.array(value)
+            elif dtype == "file":
+                pass
 
             self._data_db = self.__create(value=value, dtype=dtype)
             if self._data_db is None:
@@ -519,6 +559,11 @@ class Data(object):
         elif dtype in ["int", "float"]:
             ravdb.update_data(data, value=value)
 
+        elif dtype == "file":
+            filepath = os.path.join(DATA_FILES_PATH, "data_{}_{}".format(data.id, value))
+            copy_data(source=value, destination=filepath)
+            ravdb.update_data(data, file_path=filepath)
+
         return data
 
     @property
@@ -533,6 +578,8 @@ class Data(object):
                 return int(self._data_db.value)
             elif self.dtype == "float":
                 return float(self._data_db.value)
+        elif self.dtype == "file":
+            return self._data_db.file_path
 
     @property
     def id(self):
