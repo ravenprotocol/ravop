@@ -101,3 +101,21 @@ class OpStatus(Enum):
     COMPUTING = "computing"
     COMPUTED = "computed"
     FAILED = "failed"
+
+
+functions = {'lin': 'LINEAR', 'add': 'ADDITION', 'sub': 'SUBTRACTION',
+             'mul': 'MULTIPLICATION', 'div': 'DIVISION', 'pos': 'POSITIVE', 'neg': 'NEGATION',
+             'exp': 'EXPONENTIAL', 'natlog': 'NATURAL_LOG', 'pow': 'POWER', 'square': 'SQUARE',
+             'cube': 'CUBE', 'square_root': 'SQUARE_ROOT', 'cube_root': 'CUBE_ROOT', 'abs': 'ABSOLUTE',
+             'matmul': 'MATRIX_MULTIPLICATION', 'multiply': 'MULTIPLY', 'dot': 'DOT',
+             'transpose': 'TRANSPOSE', 'sum': 'MATRIX_SUM', 'sort': 'SORT', 'split': 'SPLIT',
+             'reshape': 'RESHAPE', 'concat': 'CONCATENATE', 'min': 'MIN', 'max': 'MAX', 'unique': 'UNIQUE',
+             'argmax': 'ARGMAX', 'argmin': 'ARGMIN', 'expand_dims': 'EXPAND_DIMS', 'inv': 'INVERSE', 'gather': 'GATHER',
+             'reverse': 'REVERSE', 'stack': 'STACK', 'tile': 'TILE', 'slice': 'SLICE', 'find_indices': 'FIND_INDICES',
+             'shape': 'SHAPE', 'greater': 'GREATER', 'greater_equal': 'GREATER_EQUAL', 'less': 'LESS',
+             'less_equal': 'LESS_EQUAL', 'equal': 'EQUAL', 'not_equal': 'NOT_EQUAL', 'logical_and': 'LOGICAL_AND',
+             'logical_or': 'LOGICAL_OR', 'logical_not': 'LOGICAL_NOT', 'logical_xor': 'LOGICAL_XOR', 'mean': 'MEAN',
+             'average': 'AVERAGE', 'mode': 'MODE', 'variance': 'VARIANCE', 'median': 'MEDIAN',
+             'std': 'STANDARD_DEVIATION', 'percentile': 'PERCENTILE', 'random': 'RANDOM',
+             'bincount': 'BINCOUNT', 'where': 'WHERE', 'sign': 'SIGN', 'foreach': 'FOREACH',
+             'one_hot_encoding': 'ONE_HOT_ENCODING'}
