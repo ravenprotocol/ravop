@@ -118,4 +118,22 @@ functions = {'lin': 'LINEAR', 'add': 'ADDITION', 'sub': 'SUBTRACTION',
              'average': 'AVERAGE', 'mode': 'MODE', 'variance': 'VARIANCE', 'median': 'MEDIAN',
              'std': 'STANDARD_DEVIATION', 'percentile': 'PERCENTILE', 'random': 'RANDOM',
              'bincount': 'BINCOUNT', 'where': 'WHERE', 'sign': 'SIGN', 'foreach': 'FOREACH',
-             'one_hot_encoding': 'ONE_HOT_ENCODING'}
+             'one_hot_encoding': 'ONE_HOT_ENCODING', 'fed': "RAVEN_FEDERATED"}
+
+
+class GraphStatus(Enum):
+    PENDING = "pending"
+    COMPUTING = "computing"
+    COMPUTED = "computed"
+    FAILED = "failed"
+
+
+class ClientOpMappingStatus(Enum):
+    SENT = "sent"
+    ACKNOWLEDGED = "acknowledged"
+    NOT_ACKNOWLEDGED = "not_acknowledged"
+    COMPUTING = "computing"
+    COMPUTED = "computed"
+    NOT_COMPUTED = "not_computed"
+    FAILED = "failed"
+    REJECTED = "rejected"

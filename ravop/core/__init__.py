@@ -3,12 +3,12 @@ import os
 from functools import wraps
 
 import numpy as np
-from ravcom import dump_data, RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY, inform_server, DATA_FILES_PATH, \
-    copy_data
-from ravcom import globals as g
-from ravcom import ravdb
 
-from ravop.enums import *
+from .enums import *
+from ..globals import globals as g
+from ..db import ravdb
+from ..db import RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY
+from ..utils import dump_data, inform_server, DATA_FILES_PATH, copy_data
 
 
 def t(value, dtype="ndarray"):
@@ -47,10 +47,6 @@ def pi():
 
 
 def __create_math_op(operator, *args, **kwargs):
-    print(operator)
-    if len(args) == 0:
-        raise Exception("Null Op")
-
     params = dict()
     for key, value in kwargs.items():
         if isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor):
@@ -61,10 +57,15 @@ def __create_math_op(operator, *args, **kwargs):
             params[key] = Tensor(value).id
         elif type(value).__name__ == 'str':
             params[key] = value
+        elif isinstance(value, bool):
+            params[key] = value
 
-    op_ids = []
-    for op in args:
-        op_ids.append(op.id)
+    if len(args) == 0:
+        op_ids = None
+    else:
+        op_ids = []
+        for op in args:
+            op_ids.append(op.id)
 
     op = ravdb.create_op(name=kwargs.get('name', None),
                          graph_id=g.graph_id,
@@ -267,10 +268,8 @@ def add_method(cls):
 
         setattr(cls, func.__name__, wrapper)
         # Note we are not binding func, but wrapper which accepts self but does exactly the same as func
-        print("func:", func)
         return func  # returning func means func can still be used normally
 
-    print("decorator:", decorator)
     return decorator
 
 
