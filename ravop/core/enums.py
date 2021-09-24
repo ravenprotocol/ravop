@@ -118,7 +118,7 @@ functions = {'lin': 'LINEAR', 'add': 'ADDITION', 'sub': 'SUBTRACTION',
              'average': 'AVERAGE', 'mode': 'MODE', 'variance': 'VARIANCE', 'median': 'MEDIAN',
              'std': 'STANDARD_DEVIATION', 'percentile': 'PERCENTILE', 'random': 'RANDOM',
              'bincount': 'BINCOUNT', 'where': 'WHERE', 'sign': 'SIGN', 'foreach': 'FOREACH',
-             'one_hot_encoding': 'ONE_HOT_ENCODING', 'fed': "RAVEN_FEDERATED"}
+             'one_hot_encoding': 'ONE_HOT_ENCODING', 'federated_training': "FEDERATED_TRAINING"}
 
 
 class GraphStatus(Enum):
