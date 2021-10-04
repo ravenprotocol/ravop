@@ -57,22 +57,20 @@ class Op(Base):
     # Graph id
     graph_id = Column(Integer, ForeignKey('graph.id'))
 
-    # 1. input 2. output 3. middle
-    node_type = Column(String(10), nullable=False)
-
     # Store list of op ids
     inputs = Column(Text, nullable=True)
 
-    # Store filenames - Pickle files
-    outputs = Column(String(100), nullable=True)
+    # Store list of data ids
+    outputs = Column(Text, nullable=True)
 
-    # Op type for no change in values
-    op_type = Column(String(50), nullable=False)
-    operator = Column(String(50), nullable=False)
+    # 1. input 2. output 3. middle
+    node_type = Column(String(10), nullable=True)
+    op_type = Column(String(50), nullable=True)
+    operator = Column(String(50), nullable=True)
+    message = Column(Text, nullable=True)
 
     # 1. pending 2. computing 3. computed 4. failed
     status = Column(String(10), default="pending")
-    message = Column(Text, nullable=True)
 
     # Dict of params
     params = Column(Text, nullable=True)
@@ -89,6 +87,54 @@ class ClientOpMapping(Base):
     op_id = Column(Integer, ForeignKey('op.id'))
     sent_time = Column(DateTime, default=None)
     response_time = Column(DateTime, default=None)
+
+    # 1. computing 2. computed 3. failed
+    status = Column(String(10), default="computing")
+
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class GraphClientMapping(Base):
+    __tablename__ = "graph_client_mapping"
+    id = Column(Integer, primary_key=True)
+    graph_id = Column(Integer, ForeignKey('graph.id'))
+    client_id = Column(Integer, ForeignKey('client.id'))
+    sent_time = Column(DateTime, default=None)
+    response_time = Column(DateTime, default=None)
+
+    # 1. computing 2. computed 3. failed
+    status = Column(String(10), default="computing")
+
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+"""
+Federated and analytics
+"""
+
+
+class Objective(Base):
+    __tablename__ = "objective"
+    id = Column(Integer, primary_key=True)
+    graph_id = Column(Integer, ForeignKey('graph.id'))
+    name = Column(String(50), nullable=True, default=None)
+    operator = Column(String(50), nullable=True, default=None)
+    rules = Column(Text, nullable=True, default=None)
+    # 1. pending 2. active 3. completed 4. failed
+    status = Column(String(10), default="pending")
+
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class ObjectiveClientMapping(Base):
+    __tablename__ = "objective_client_mapping"
+    id = Column(Integer, primary_key=True)
+    objective_id = Column(Integer, ForeignKey('objective.id'))
+    client_id = Column(Integer, ForeignKey('client.id'))
+    sent_time = Column(DateTime, default=None)
+    response_time = Column(DateTime, default=None)
+
+    result = Column(Text, default=None)
 
     # 1. computing 2. computed 3. failed
     status = Column(String(10), default="computing")

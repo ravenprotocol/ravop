@@ -26,6 +26,10 @@ def t(value, dtype="ndarray"):
         return File(value=value, dtype=dtype)
 
 
+def create_op(operator=None, *args, **params):
+    return __create_math_op(operator=operator, *args, **params)
+
+
 def epsilon():
     return Scalar(1e-07)
 
@@ -46,9 +50,11 @@ def pi():
     return Scalar(np.pi)
 
 
-def __create_math_op(operator, *args, **kwargs):
+def __create_math_op(*args, **kwargs):
     params = dict()
     for key, value in kwargs.items():
+        if key in ["node_type", "op_type", "status", "name", "operator"]:
+            continue
         if isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor):
             params[key] = value.id
         elif type(value).__name__ in ['int', 'float']:
@@ -62,19 +68,36 @@ def __create_math_op(operator, *args, **kwargs):
 
     if len(args) == 0:
         op_ids = None
+        op_type = None
+        node_type = None
     else:
         op_ids = []
         for op in args:
             op_ids.append(op.id)
 
+        if len(op_ids) == 1:
+            op_type = OpTypes.UNARY.value
+        elif len(op_ids) == 2:
+            op_type = OpTypes.BINARY.value
+        else:
+            op_type = None
+
+        node_type = NodeTypes.MIDDLE.value
+
+    op_ids = json.dumps(op_ids)
+    node_type = kwargs.get("node_type", node_type)
+    op_type = kwargs.get("op_type", op_type)
+    status = kwargs.get("status", OpStatus.PENDING.value)
+    operator = kwargs.get("operator", None)
+
     op = ravdb.create_op(name=kwargs.get('name', None),
                          graph_id=g.graph_id,
-                         node_type=NodeTypes.MIDDLE.value,
-                         inputs=json.dumps(op_ids),
-                         outputs=json.dumps(None),
-                         op_type=OpTypes.BINARY.value,
+                         node_type=node_type,
+                         inputs=op_ids,
+                         outputs=None,
+                         op_type=op_type,
                          operator=operator,
-                         status=OpStatus.PENDING.value,
+                         status=status,
                          params=json.dumps(params))
 
     # Add op to queue
@@ -274,8 +297,7 @@ def add_method(cls):
 
 
 for key, value in functions.items():
-    exec("""@add_method(Op)\ndef {}(*args, **kwargs):\n    return __create_math_op("{}", *args, **kwargs)""".format(key,
-                                                                                                                    key))
+    exec("""@add_method(Op)\ndef {}(*args, **kwargs):\n    return __create_math_op(*args, operator="{}", **kwargs)""".format(key, key))
 
 
 class Scalar(Op):

@@ -7,7 +7,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database as cd, drop_database as dba
 
 from .enums import ClientOpMappingStatus, OpStatus
-from .models import Op, Graph, ClientOpMapping, Client, Data, Base
+from .models import Op, Graph, ClientOpMapping, Client, Data, Base, GraphClientMapping, Objective, \
+    ObjectiveClientMapping
 from ..config import RDF_DATABASE_URI
 from ..utils import delete_data_file, save_data_to_file, Singleton
 
@@ -63,20 +64,28 @@ class DBManager(object):
             obj = self.session.query(Graph).get(id)
         elif name == "client":
             obj = self.session.query(Client).get(id)
+        elif name == "objective":
+            obj = self.session.query(Objective).get(id)
+        elif name == "objective_client_mapping":
+            obj = self.session.query(ObjectiveClientMapping).get(id)
         else:
             obj = None
 
         return obj
 
-    def add(self, name, **kwargs):
-        if name == "op":
+    def add(self, n, **kwargs):
+        if n == "op":
             obj = Op()
-        elif name == "data":
+        elif n == "data":
             obj = Data()
-        elif name == "graph":
+        elif n == "graph":
             obj = Graph()
-        elif name == "client":
+        elif n == "client":
             obj = Client()
+        elif n == "objective":
+            obj = Objective()
+        elif n == "objective_client_mapping":
+            obj = ObjectiveClientMapping()
         else:
             obj = None
 
@@ -96,6 +105,10 @@ class DBManager(object):
             obj = self.session.query(Graph).get(id)
         elif name == "client":
             obj = self.session.query(Client).get(id)
+        elif name == "objective":
+            obj = self.session.query(Objective).get(id)
+        elif name == "objective_client_mapping":
+            obj = self.session.query(ObjectiveClientMapping).get(id)
         else:
             obj = None
 
@@ -462,3 +475,72 @@ class DBManager(object):
         for key, value in kwargs.items():
             setattr(client, key, value)
         self.session.query(Op).commit()
+
+    """
+    Graph client mapping
+    """
+
+    def create_graph_client_mapping(self, **kwargs):
+        mapping = GraphClientMapping()
+
+        for key, value in kwargs.items():
+            setattr(mapping, key, value)
+
+        self.session.add(mapping)
+        self.session.commit()
+        return mapping
+
+    def update_graph_client_mapping(self, graph_client_mapping_id, **kwargs):
+        mapping = self.session.query(GraphClientMapping).get(graph_client_mapping_id)
+        for key, value in kwargs.items():
+            setattr(mapping, key, value)
+        self.session.commit()
+        return mapping
+
+    def find_graph_client_mapping(self, graph_id, client_id):
+        mapping = self.session.query(GraphClientMapping).filter(GraphClientMapping.client_id == client_id,
+                                                                GraphClientMapping.graph_id == graph_id).first()
+        return mapping
+
+    """
+    Objective
+    """
+
+    def create_objective(self, **kwargs):
+        print(kwargs)
+        return self.add("objective", **kwargs)
+
+    def update_objective(self, objective_id, **kwargs):
+        return self.update("objective", objective_id, **kwargs)
+
+    def get_objective(self, objective_id):
+        return self.get("objective", objective_id)
+
+    def find_active_objective(self, client_id):
+        objectives = self.session.query(Objective).filter(or_(Objective.status == "pending",
+                                                              Objective.status == "active")).all()
+        for objective in objectives:
+            if self.find_objective_client_mapping(objective.id, client_id) is None:
+                return objective
+        return None
+
+    def get_objectives(self):
+        return self.session.query(Objective).all()
+
+    def create_objective_client_mapping(self, **kwargs):
+        return self.add("objective_client_mapping", **kwargs)
+
+    def update_objective_client_mapping(self, objective_client_mapping_id, **kwargs):
+        return self.update("objective_client_mapping", objective_client_mapping_id, **kwargs)
+
+    def get_objective_client_mapping(self, objective_client_mapping_id):
+        return self.get("objective_client_mapping", objective_client_mapping_id)
+
+    def get_objective_client_mappings(self):
+        return self.session.query(ObjectiveClientMapping).all()
+
+    def find_objective_client_mapping(self, objective_id, client_id):
+        mapping = self.session.query(ObjectiveClientMapping).filter(ObjectiveClientMapping.client_id == client_id,
+                                                                    ObjectiveClientMapping.objective_id == objective_id) \
+            .first()
+        return mapping
