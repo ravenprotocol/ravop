@@ -1,19 +1,16 @@
-from enum import Enum
-
-
-class OpTypes(Enum):
+class OpTypes(object):
     UNARY = "unary"
     BINARY = "binary"
     OTHER = "other"
 
 
-class NodeTypes(Enum):
+class NodeTypes(object):
     INPUT = "input"
     MIDDLE = "middle"
     OUTPUT = "output"
 
 
-class Operators(Enum):
+class Operators(object):
     # Arithmetic
     LINEAR = "linear"
     ADDITION = "addition"
@@ -89,18 +86,11 @@ class Operators(Enum):
     ONE_HOT_ENCODING = "one_hot_encoding"
 
 
-class TFJSOperators(Enum):
+class TFJSOperators(object):
     SIGMOID = "sigmoid"
     SIN = "sin"
     SINH = "sinh"
     SOFTPLUS = "softplus"
-
-
-class OpStatus(Enum):
-    PENDING = "pending"
-    COMPUTING = "computing"
-    COMPUTED = "computed"
-    FAILED = "failed"
 
 
 functions = {'lin': 'LINEAR', 'add': 'ADDITION', 'sub': 'SUBTRACTION',
@@ -121,19 +111,24 @@ functions = {'lin': 'LINEAR', 'add': 'ADDITION', 'sub': 'SUBTRACTION',
              'one_hot_encoding': 'ONE_HOT_ENCODING', 'federated_training': "FEDERATED_TRAINING"}
 
 
-class GraphStatus(Enum):
+class Status(object):
     PENDING = "pending"
-    COMPUTING = "computing"
     COMPUTED = "computed"
     FAILED = "failed"
+    COMPUTING = "computing"
 
 
-class ClientOpMappingStatus(Enum):
+class OpStatus(Status):
+    pass
+
+
+class GraphStatus(Status):
+    pass
+
+
+class MappingStatus(Status):
     SENT = "sent"
     ACKNOWLEDGED = "acknowledged"
     NOT_ACKNOWLEDGED = "not_acknowledged"
-    COMPUTING = "computing"
-    COMPUTED = "computed"
     NOT_COMPUTED = "not_computed"
-    FAILED = "failed"
     REJECTED = "rejected"

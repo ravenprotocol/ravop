@@ -4,7 +4,7 @@ from functools import wraps
 
 import numpy as np
 
-from .enums import *
+from ..strings import Operators, OpTypes, NodeTypes, functions, OpStatus
 from ..globals import globals as g
 from ..db import ravdb
 from ..db import RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY
@@ -76,18 +76,18 @@ def __create_math_op(*args, **kwargs):
             op_ids.append(op.id)
 
         if len(op_ids) == 1:
-            op_type = OpTypes.UNARY.value
+            op_type = OpTypes.UNARY
         elif len(op_ids) == 2:
-            op_type = OpTypes.BINARY.value
+            op_type = OpTypes.BINARY
         else:
             op_type = None
 
-        node_type = NodeTypes.MIDDLE.value
+        node_type = NodeTypes.MIDDLE
 
     op_ids = json.dumps(op_ids)
     node_type = kwargs.get("node_type", node_type)
     op_type = kwargs.get("op_type", op_type)
-    status = kwargs.get("status", OpStatus.PENDING.value)
+    status = kwargs.get("status", OpStatus.PENDING)
     operator = kwargs.get("operator", None)
 
     op = ravdb.create_op(name=kwargs.get('name', None),
@@ -101,7 +101,7 @@ def __create_math_op(*args, **kwargs):
                          params=json.dumps(params))
 
     # Add op to queue
-    if op.status != OpStatus.COMPUTED.value and op.status != OpStatus.FAILED.value:
+    if op.status != OpStatus.COMPUTED and op.status != OpStatus.FAILED:
         if g.graph_id is None:
             q = RavQueue(name=QUEUE_HIGH_PRIORITY)
             q.push(op.id)
@@ -141,26 +141,26 @@ class Op(object):
         if (inputs is not None or outputs is not None) and operator is not None:
             # Figure out node type
             if inputs is None and outputs is not None:
-                node_type = NodeTypes.INPUT.value
+                node_type = NodeTypes.INPUT
             elif inputs is not None and outputs is None:
-                node_type = NodeTypes.MIDDLE.value
+                node_type = NodeTypes.MIDDLE
             else:
                 raise Exception("Invalid node type")
 
             if inputs is not None:
                 if len(inputs) == 1:
-                    op_type = OpTypes.UNARY.value
+                    op_type = OpTypes.UNARY
                 elif len(inputs) == 2:
-                    op_type = OpTypes.BINARY.value
+                    op_type = OpTypes.BINARY
                 else:
                     raise Exception("Invalid number of inputs")
             else:
-                op_type = OpTypes.OTHER.value
+                op_type = OpTypes.OTHER
 
             if outputs is None:
-                status = OpStatus.PENDING.value
+                status = OpStatus.PENDING
             else:
-                status = OpStatus.COMPUTED.value
+                status = OpStatus.COMPUTED
 
             inputs = json.dumps(inputs)
             outputs = json.dumps(outputs)
@@ -175,7 +175,7 @@ class Op(object):
                                  status=status,
                                  params=json.dumps(kwargs))
             # Add op to queue
-            if op.status != OpStatus.COMPUTED.value and op.status != OpStatus.FAILED.value:
+            if op.status != OpStatus.COMPUTED and op.status != OpStatus.FAILED:
                 if g.graph_id is None:
                     q = RavQueue(name=QUEUE_HIGH_PRIORITY)
                     q.push(op.id)
@@ -311,7 +311,7 @@ class Scalar(Op):
         self.__find_dtype(value)
 
         data = Data(value=value, dtype=self.dtype)
-        super().__init__(operator=Operators.LINEAR.value, inputs=None, outputs=[data.id], **kwargs)
+        super().__init__(operator=Operators.LINEAR, inputs=None, outputs=[data.id], **kwargs)
 
     def __find_dtype(self, x):
         if type(x).__name__ == "str":
@@ -375,7 +375,7 @@ class Tensor(Op):
         self._shape = value.shape
 
         data = Data(value=value, dtype="ndarray")
-        super().__init__(operator=Operators.LINEAR.value, inputs=None, outputs=[data.id], **kwargs)
+        super().__init__(operator=Operators.LINEAR, inputs=None, outputs=[data.id], **kwargs)
 
     @property
     def dtype(self):
@@ -396,7 +396,7 @@ class Tensor(Op):
 class File(Op):
     def __init__(self, value, **kwargs):
         data = Data(value=value, dtype="file")
-        super().__init__(operator=Operators.LINEAR.value, inputs=None, outputs=[data.id], **kwargs)
+        super().__init__(operator=Operators.LINEAR, inputs=None, outputs=[data.id], **kwargs)
 
     @property
     def dtype(self):
@@ -570,287 +570,3 @@ class Graph(object):
 
     def __str__(self):
         return "Graph:\nId:{}\nStatus:{}\n".format(self.id, self.status)
-
-# Functional Interface of RavOp
-
-
-# Arithmetic
-# def lin(op, **kwargs):
-#     return __create_math_op2(op, Operators.LINEAR.value, **kwargs)
-#
-#
-# # def add(op1, op2, **kwargs):
-# #     return __create_math_op(op1, op2, Operators.ADDITION.value, **kwargs)
-# # def sub(op1, op2, **kwargs):
-# #     return __create_math_op(op1, op2, Operators.SUBTRACTION.value, **kwargs)
-# #
-# #
-# # def mul(op1, op2, **kwargs):
-# #     return __create_math_op(op1, op2, Operators.MULTIPLICATION.value, **kwargs)
-# #
-# #
-# # def div(op1, op2, **kwargs):
-# #     return __create_math_op(op1, op2, Operators.DIVISION.value, **kwargs)
-#
-#
-# def pos(op, **kwargs):
-#     return __create_math_op2(op, Operators.POSITIVE.value, **kwargs)
-#
-#
-# def neg(op, **kwargs):
-#     return __create_math_op2(op, Operators.NEGATION.value, **kwargs)
-#
-#
-# def exp(op, **kwargs):
-#     return __create_math_op2(op, Operators.EXPONENTIAL.value, **kwargs)
-#
-#
-# def natlog(op, **kwargs):
-#     return __create_math_op2(op, Operators.NATURAL_LOG.value, **kwargs)
-#
-#
-# def pow(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.POWER.value, **kwargs)
-#
-#
-# def square(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.SQUARE.value, **kwargs)
-#
-#
-# def cube(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.CUBE.value, **kwargs)
-#
-#
-# def square_root(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.SQUARE_ROOT.value, **kwargs)
-#
-#
-# def cube_root(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.CUBE_ROOT.value, **kwargs)
-#
-#
-# def abs(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.ABSOLUTE.value, **kwargs)
-#
-#
-# # Tensors
-# def matmul(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.MATRIX_MULTIPLICATION.value, **kwargs)
-#
-#
-# def multiply(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.MULTIPLY.value, **kwargs)
-#
-#
-# def dot(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.DOT.value, **kwargs)
-#
-#
-# def transpose(op, **kwargs):
-#     return __create_math_op2(op, Operators.TRANSPOSE.value, **kwargs)
-#
-#
-# def sum(op, **kwargs):
-#     return __create_math_op2(op, Operators.MATRIX_SUM.value, **kwargs)
-#
-#
-# def sort(op, **kwargs):
-#     return __create_math_op2(op, Operators.SORT.value, **kwargs)
-#
-#
-# def split(op, **kwargs):
-#     return __create_math_op2(op, Operators.SPLIT.value, **kwargs)
-#
-#
-# def reshape(op, **kwargs):
-#     return __create_math_op2(op, Operators.RESHAPE.value, **kwargs)
-#
-#
-# def concat(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.CONCATENATE.value, **kwargs)
-#
-#
-# def min(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.MIN.value, **kwargs)
-#
-#
-# def max(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.MAX.value, **kwargs)
-#
-#
-# def unique(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.UNIQUE.value, **kwargs)
-#
-#
-# def argmax(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.ARGMAX.value, **kwargs)
-#
-#
-# def argmin(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.ARGMIN.value, **kwargs)
-#
-#
-# def expand_dims(op, **kwargs):
-#     return __create_math_op2(op, Operators.EXPAND_DIMS.value, **kwargs)
-#
-#
-# def inv(op, **kwargs):
-#     return __create_math_op2(op, Operators.INVERSE.value, **kwargs)
-#
-#
-# def gather(op, op2, **kwargs):
-#     return __create_math_op(op, op2, Operators.GATHER.value, **kwargs)
-#
-#
-# def reverse(op, **kwargs):
-#     return __create_math_op2(op, Operators.REVERSE.value, **kwargs)
-#
-#
-# def stack(op, **kwargs):
-#     return __create_math_op2(op, Operators.STACK.value, **kwargs)
-#
-#
-# def tile(op, **kwargs):
-#     return __create_math_op2(op, Operators.TILE.value, **kwargs)
-#
-#
-# def slice(op, **kwargs):
-#     return __create_math_op2(op, Operators.SLICE.value, **kwargs)
-#
-#
-# def find_indices(op, op2, **kwargs):
-#     return __create_math_op(op, op2, Operators.FIND_INDICES.value, **kwargs)
-#
-#
-# def shape(op, **kwargs):
-#     return __create_math_op2(op, Operators.SHAPE.value, **kwargs)
-#
-#
-# # Comparison
-# def greater(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.GREATER.value, **kwargs)
-#
-#
-# def greater_equal(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.GREATER_EQUAL.value, **kwargs)
-#
-#
-# def less(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.LESS.value, **kwargs)
-#
-#
-# def less_equal(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.LESS_EQUAL.value, **kwargs)
-#
-#
-# def equal(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.EQUAL.value, **kwargs)
-#
-#
-# def not_equal(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.NOT_EQUAL.value, **kwargs)
-#
-#
-# # Logical
-# def logical_and(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.LOGICAL_AND.value, **kwargs)
-#
-#
-# def logical_or(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.LOGICAL_OR.value, **kwargs)
-#
-#
-# def logical_not(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.LOGICAL_NOT.value, **kwargs)
-#
-#
-# def logical_xor(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.LOGICAL_XOR.value, **kwargs)
-#
-#
-# # Statistical
-# def mean(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.MEAN.value, **kwargs)
-#
-#
-# def average(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.AVERAGE.value, **kwargs)
-#
-#
-# def mode(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.MODE.value, **kwargs)
-#
-#
-# def median(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.MEDIAN.value, **kwargs)
-#
-#
-# def variance(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.VARIANCE.value, **kwargs)
-#
-#
-# def std(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.STANDARD_DEVIATION.value, **kwargs)
-#
-#
-# def percentile(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.PERCENTILE.value, **kwargs)
-#
-#
-# def random(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.RANDOM.value, **kwargs)
-#
-#
-# def bincount(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.BINCOUNT.value, **kwargs)
-#
-#
-# def where(op1, op2, **kwargs):
-#     return __create_math_op(op1, op2, Operators.WHERE.value, **kwargs)
-#
-#
-# def sign(op1, **kwargs):
-#     return __create_math_op2(op1, Operators.SIGN.value, **kwargs)
-#
-#
-# def foreach(op, **kwargs):
-#     return __create_math_op2(op, Operators.FOREACH.value, **kwargs)
-#
-#
-# # Data Preprocessing
-#
-#
-# def one_hot_encoding(op, **kwargs):
-#     return __create_math_op2(op, Operators.ONE_HOT_ENCODING.value, **kwargs)
-
-
-# def tfjs(name, ops, **kwargs):
-#     return __create_math_op(ops, name, library="tfjs", **kwargs)
-#
-#
-# ops = dict()
-#
-#
-# def factory(operator, **kwargs):
-#     def op(ops, **kwargs1):
-#         print(ops)
-#         return __create_math_op(operator, ops, **kwargs1)
-#     return op
-#
-#
-# addition = factory(Operators.ADDITION.value)
-# subtraction = factory(Operators.SUBTRACTION.value)
-# division = factory(Operators.DIVISION.value)
-#
-#
-# def factory2(operator, **kwargs):
-#     def op(cls, ops, **kwargs1):
-#         print(ops)
-#         return __create_math_op(operator, ops, **kwargs1)
-#     ops[operator] = op
-#     return op
-#
-#
-# for name, op in ops.items():
-#     print(name, op)
-#     setattr(Op, name, classmethod(op))

@@ -31,7 +31,8 @@ class Data(Base):
 class Client(Base):
     __tablename__ = 'client'
     id = Column(Integer, primary_key=True)
-    client_id = Column(String(100), nullable=False)
+    cid = Column(String(100), nullable=False)
+    sid = Column(String(100), nullable=True)
     client_ip = Column(String(20), nullable=True)
     status = Column(String(20), nullable=False, default="disconnected")
 
@@ -120,6 +121,7 @@ class Objective(Base):
     name = Column(String(50), nullable=True, default=None)
     operator = Column(String(50), nullable=True, default=None)
     rules = Column(Text, nullable=True, default=None)
+    result = Column(Text, nullable=True, default=None)
     # 1. pending 2. active 3. completed 4. failed
     status = Column(String(10), default="pending")
 

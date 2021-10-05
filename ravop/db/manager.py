@@ -6,10 +6,10 @@ from sqlalchemy import or_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database as cd, drop_database as dba
 
-from .enums import ClientOpMappingStatus, OpStatus
 from .models import Op, Graph, ClientOpMapping, Client, Data, Base, GraphClientMapping, Objective, \
     ObjectiveClientMapping
 from ..config import RDF_DATABASE_URI
+from ..strings import MappingStatus, OpStatus
 from ..utils import delete_data_file, save_data_to_file, Singleton
 
 
@@ -241,17 +241,23 @@ class DBManager(object):
         self.session.commit()
         return obj
 
-    def get_client(self, client_id):
+    def get_client(self, id):
         """
-        Get an existing client
+        Get an existing client by id
         """
-        return self.session.query(Client).get(client_id)
+        return self.session.query(Client).get(id)
 
     def get_client_by_sid(self, sid):
         """
         Get an existing client by sid
         """
-        return self.session.query(Client).filter(Client.client_id == sid).first()
+        return self.session.query(Client).filter(Client.sid == sid).first()
+
+    def get_client_by_cid(self, cid):
+        """
+        Get an existing client by cid
+        """
+        return self.session.query(Client).filter(Client.cid == cid).first()
 
     def update_client(self, client, **kwargs):
         for key, value in kwargs.items():
@@ -367,9 +373,9 @@ class DBManager(object):
 
         client_list = []
         for client in clients:
-            client_ops = client.client_ops.filter(or_(ClientOpMapping.status == ClientOpMappingStatus.SENT.value,
-                                                      ClientOpMapping.status == ClientOpMappingStatus.ACKNOWLEDGED.value,
-                                                      ClientOpMapping.status == ClientOpMappingStatus.COMPUTING.value))
+            client_ops = client.client_ops.filter(or_(ClientOpMapping.status == MappingStatus.SENT,
+                                                      ClientOpMapping.status == MappingStatus.ACKNOWLEDGED,
+                                                      ClientOpMapping.status == MappingStatus.COMPUTING))
             if client_ops.count() == 0:
                 client_list.append(client)
 
@@ -414,14 +420,14 @@ class DBManager(object):
         return mapping
 
     def get_incomplete_op(self):
-        ops = self.session.query(Op).filter(Op.status == OpStatus.COMPUTING.value).all()
+        ops = self.session.query(Op).filter(Op.status == OpStatus.COMPUTING).all()
 
         for op in ops:
             op_mappings = op.op_mappings
-            if op_mappings.filter(ClientOpMapping.status == ClientOpMappingStatus.SENT.value).count() >= 3 or \
-                    op_mappings.filter(ClientOpMapping.status == ClientOpMappingStatus.COMPUTING.value).count() >= 2 \
-                    or op_mappings.filter(ClientOpMapping.status == ClientOpMappingStatus.REJECTED.value).count() >= 5 \
-                    or op_mappings.filter(ClientOpMapping.status == ClientOpMappingStatus.FAILED.value).count() >= 3:
+            if op_mappings.filter(ClientOpMapping.status == MappingStatus.SENT).count() >= 3 or \
+                    op_mappings.filter(ClientOpMapping.status == MappingStatus.COMPUTING).count() >= 2 \
+                    or op_mappings.filter(ClientOpMapping.status == MappingStatus.REJECTED).count() >= 5 \
+                    or op_mappings.filter(ClientOpMapping.status == MappingStatus.FAILED).count() >= 3:
                 continue
 
             return op
@@ -430,7 +436,7 @@ class DBManager(object):
     def get_op_status_final(self, op_id):
         op = self.get_op(op_id=op_id)
         op_mappings = op.op_mappings
-        if op_mappings.filter(ClientOpMapping.status == ClientOpMappingStatus.FAILED.value).count() >= 3:
+        if op_mappings.filter(ClientOpMapping.status == MappingStatus.FAILED).count() >= 3:
             return "failed"
 
         return "computing"
@@ -471,7 +477,7 @@ class DBManager(object):
         self.session.commit()
 
     def update_federated_client_status(self, client, **kwargs):
-        # self.session.query(Op).filter(Op.status == OpStatus.COMPUTING.value).all()
+        # self.session.query(Op).filter(Op.status == OpStatus.COMPUTING).all()
         for key, value in kwargs.items():
             setattr(client, key, value)
         self.session.query(Op).commit()
@@ -544,3 +550,12 @@ class DBManager(object):
                                                                     ObjectiveClientMapping.objective_id == objective_id) \
             .first()
         return mapping
+
+    def get_objective_mappings(self, objective_id, status=None):
+        if status is not None:
+            return self.session.query(ObjectiveClientMapping).filter(
+                ObjectiveClientMapping.objective_id == objective_id,
+                ObjectiveClientMapping.status == MappingStatus.COMPUTED)
+        else:
+            return self.session.query(ObjectiveClientMapping).filter(
+                ObjectiveClientMapping.objective_id == objective_id)
