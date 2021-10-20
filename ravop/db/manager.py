@@ -2,12 +2,12 @@ import json
 
 import numpy as np
 import sqlalchemy as db
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy_utils import database_exists, create_database as cd, drop_database as dba
 
 from .models import Op, Graph, ClientOpMapping, Client, Data, Base, GraphClientMapping, Objective, \
-    ObjectiveClientMapping
+    ObjectiveClientMapping, ClientSIDMapping
 from ..config import RDF_DATABASE_URI
 from ..strings import MappingStatus, OpStatus
 from ..utils import delete_data_file, save_data_to_file, Singleton
@@ -68,6 +68,8 @@ class DBManager(object):
             obj = self.session.query(Objective).get(id)
         elif name == "objective_client_mapping":
             obj = self.session.query(ObjectiveClientMapping).get(id)
+        elif name == "client_sid_mapping":
+            obj = self.session.query(ClientSIDMapping).get(id)
         else:
             obj = None
 
@@ -86,6 +88,8 @@ class DBManager(object):
             obj = Objective()
         elif n == "objective_client_mapping":
             obj = ObjectiveClientMapping()
+        elif n == "client_sid_mapping":
+            obj = ClientSIDMapping()
         else:
             obj = None
 
@@ -109,6 +113,8 @@ class DBManager(object):
             obj = self.session.query(Objective).get(id)
         elif name == "objective_client_mapping":
             obj = self.session.query(ObjectiveClientMapping).get(id)
+        elif name == "client_sid_mapping":
+            obj = self.session.query(ClientSIDMapping).get(id)
         else:
             obj = None
 
@@ -246,12 +252,6 @@ class DBManager(object):
         Get an existing client by id
         """
         return self.session.query(Client).get(id)
-
-    def get_client_by_sid(self, sid):
-        """
-        Get an existing client by sid
-        """
-        return self.session.query(Client).filter(Client.sid == sid).first()
 
     def get_client_by_cid(self, cid):
         """
@@ -559,3 +559,30 @@ class DBManager(object):
         else:
             return self.session.query(ObjectiveClientMapping).filter(
                 ObjectiveClientMapping.objective_id == objective_id)
+
+    """
+    Client SID Mapping
+    """
+
+    def create_client_sid_mapping(self, **kwargs):
+        return self.add("client_sid_mapping", **kwargs)
+
+    def update_client_sid_mapping(self, client_sid_mapping_id, **kwargs):
+        return self.update("client_sid_mapping", client_sid_mapping_id, **kwargs)
+
+    def get_client_sid_mapping(self, client_sid_mapping_id):
+        return self.get("client_sid_mapping", client_sid_mapping_id)
+
+    def delete_client_sid_mapping(self, sid):
+        self.session.query(ClientSIDMapping).filter(ClientSIDMapping.sid == sid).first().delete()
+
+    def find_client_sid_mapping(self, cid, sid):
+        return self.session.query(ClientSIDMapping).filter(
+            and_(ClientSIDMapping.sid == sid, ClientSIDMapping.cid == cid)).first()
+
+    def get_client_by_sid(self, sid):
+        client_sid_mapping = self.session.query(ClientSIDMapping).filter(ClientSIDMapping.sid == sid).first()
+        if client_sid_mapping is None:
+            return None
+        else:
+            return self.get_client_by_cid(cid=client_sid_mapping.cid)

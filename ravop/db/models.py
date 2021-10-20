@@ -32,9 +32,10 @@ class Client(Base):
     __tablename__ = 'client'
     id = Column(Integer, primary_key=True)
     cid = Column(String(100), nullable=False)
-    sid = Column(String(100), nullable=True)
     client_ip = Column(String(20), nullable=True)
     status = Column(String(20), nullable=False, default="disconnected")
+
+    client_sids = relationship("ClientSIDMapping", backref="client", lazy="dynamic")
 
     # 1. ravop 2. ravjs
     type = Column(String(10), nullable=True)
@@ -46,6 +47,18 @@ class Client(Base):
 
     connected_at = Column(DateTime, default=datetime.datetime.utcnow)
     disconnected_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    last_active_time = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class ClientSIDMapping(Base):
+    __tablename__ = 'client_sid_mapping'
+    id = Column(Integer, primary_key=True)
+    client_id = Column(Integer, ForeignKey('client.id'))
+    cid = Column(String(100), nullable=False)
+    sid = Column(String(100), nullable=False)
+    namespace = Column(String(100), nullable=False)
 
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
