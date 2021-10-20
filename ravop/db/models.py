@@ -41,6 +41,8 @@ class Client(Base):
     client_ops = relationship("ClientOpMapping", backref="client", lazy="dynamic")
 
     reporting = Column(String(20), nullable=False, default="pending")
+    ftp_credentials = Column(String(100), nullable=True, default=None)
+    context = Column(Text, nullable=True, default=None)
 
     connected_at = Column(DateTime, default=datetime.datetime.utcnow)
     disconnected_at = Column(DateTime, default=datetime.datetime.utcnow)
