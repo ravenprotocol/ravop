@@ -6,8 +6,6 @@ import numpy as np
 
 from ..strings import Operators, OpTypes, NodeTypes, functions, OpStatus
 from ..globals import globals as g
-from ..db import ravdb
-from ..db import RavQueue, QUEUE_LOW_PRIORITY, QUEUE_HIGH_PRIORITY
 from ..utils import dump_data, inform_server, DATA_FILES_PATH, copy_data
 
 

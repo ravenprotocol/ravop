@@ -4,9 +4,10 @@ import os
 import shutil
 
 import numpy as np
+import requests
 
-from .socket_client import SocketClient
 from .config import DATA_FILES_PATH, RAVSOCK_SERVER_URL
+from .socket_client import SocketClient
 
 
 def save_data_to_file(data_id, data):
@@ -87,13 +88,6 @@ def inform_server():
     socket_client.emit("inform_server", data={"type": "event"}, namespace="/ravop")
 
 
-def reset_database():
-    from .db import ravdb
-    ravdb.drop_database()
-    ravdb.create_database()
-    ravdb.create_tables()
-
-
 def reset():
     for file_path in glob.glob("files/*"):
         if os.path.exists(file_path):
@@ -108,3 +102,27 @@ def reset():
     # Clear redis queues
     from .db import clear_redis_queues
     clear_redis_queues()
+
+
+def make_request(endpoint, method, payload={}, headers=None):
+    if method == "post":
+        return requests.post(
+            "{}{}".format(RAVSOCK_SERVER_URL, endpoint), json=payload, headers=headers
+        )
+    elif method == "get":
+        return requests.get(
+            "{}{}".format(RAVSOCK_SERVER_URL, endpoint), headers=headers
+        )
+
+
+def convert_to_ndarray(x):
+    if isinstance(x, str):
+        x = np.array(json.loads(x))
+    elif isinstance(x, list) or isinstance(x, tuple) or isinstance(x, int) or isinstance(x, float):
+        x = np.array(x)
+
+    return x
+
+
+def convert_ndarray_to_str(x):
+    return str(x.tolist())
