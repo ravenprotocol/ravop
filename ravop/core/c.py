@@ -1,6 +1,5 @@
 import json
 from functools import wraps
-
 import numpy as np
 
 from ..globals import globals as g
@@ -117,7 +116,7 @@ def __create_math_op(*args, **kwargs):
     # )
     op = op.json()
     print(type(op), op)
-    return Op(id=op["op_id"])
+    return Op(id=op["id"])
 
 
 class ParentClass(object):
@@ -130,8 +129,11 @@ class ParentClass(object):
         else:
             self.__create(self.create_endpoint, **kwargs)
 
+    def fetch_update(self):
+        self.__get(self.get_endpoint)
+
     def __get(self, endpoint):
-        print(endpoint)
+        print('ENDPOINT: ',endpoint)
         res = make_request(endpoint, "get")
         print("Response:GET:", res.json())
         status_code = res.status_code
@@ -197,6 +199,13 @@ class Op(ParentClass):
                 info["name"] = kwargs.get("name", None)
 
                 super().__init__(id, **info)
+
+    def wait_till_computed(self):
+        while self.get_status()!='computed':
+            pass    
+
+    def get_status(self):
+        return make_request(f"op/status/?id={self.id}", "get").json()['op_status']
 
     def extract_info(self, **kwargs):
         inputs = kwargs.get("inputs", None)
@@ -333,7 +342,9 @@ class Op(ParentClass):
         )
 
     def __call__(self, *args, **kwargs):
+        self.fetch_update()
         return self.get_output()
+
 
     def __add__(self, other):
         return add(self, other)
@@ -519,6 +530,10 @@ class Data(ParentClass):
             kwargs['value'] = value
 
         super().__init__(id, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        self.fetch_update()
+        return self.get_value()
 
     def get_value(self):
         if hasattr(self, 'value'):
