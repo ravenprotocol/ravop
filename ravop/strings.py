@@ -85,6 +85,8 @@ class Operators(object):
     # Data Preprocessing
     ONE_HOT_ENCODING = "one_hot_encoding"
 
+    SET_VALUE = "set_value"
+
 
 class TFJSOperators(object):
     SIGMOID = "sigmoid"
@@ -153,7 +155,8 @@ functions = {'lin': Operators.LINEAR,
              'where':  Operators.WHERE, 
              'sign':  Operators.SIGN, 
              'foreach':  Operators.FOREACH,
-             'one_hot_encoding':  Operators.ONE_HOT_ENCODING}
+             'one_hot_encoding':  Operators.ONE_HOT_ENCODING,
+             'set_value':  Operators.SET_VALUE}
 
 
 class Status(object):
