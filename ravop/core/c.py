@@ -1,7 +1,8 @@
 import json
 from functools import wraps
 import numpy as np
-
+import time
+import sys
 from ..globals import globals as g
 from ..strings import Operators, OpTypes, NodeTypes, functions, OpStatus
 from ..utils import make_request, convert_to_ndarray
@@ -115,8 +116,10 @@ def __create_math_op(*args, **kwargs):
     #     params=json.dumps(params),
     # )
     op = op.json()
-    print(type(op), op)
-    return Op(id=op["id"])
+    op = Op(id=op["id"])
+    if g.eager_mode:
+        op.wait_till_computed()
+    return op
 
 
 class ParentClass(object):
@@ -133,9 +136,9 @@ class ParentClass(object):
         self.__get(self.get_endpoint)
 
     def __get(self, endpoint):
-        print('ENDPOINT: ',endpoint)
+        # print('ENDPOINT: ',endpoint)
         res = make_request(endpoint, "get")
-        print("Response:GET:", res.json())
+        # print("Response:GET:", res.json())
         status_code = res.status_code
         res = res.json()
         if status_code == 200:
@@ -148,7 +151,7 @@ class ParentClass(object):
 
     def __create(self, endpoint, **kwargs):
         res = make_request(endpoint, "post", payload={**kwargs})
-        print("Response:POST:", res.json(), kwargs)
+        # print("Response:POST:", res.json(), kwargs)
         status_code = res.status_code
         res = res.json()
         if status_code == 200:
@@ -201,8 +204,12 @@ class Op(ParentClass):
                 super().__init__(id, **info)
 
     def wait_till_computed(self):
+        print('Waiting for Op id: ',self.id)
         while self.get_status()!='computed':
-            pass    
+            time.sleep(0.1)
+        sys.stdout.write("\033[F") #back to previous line 
+        sys.stdout.write("\033[K") #clear line 
+       
 
     def get_status(self):
         return make_request(f"op/status/?id={self.id}", "get").json()['op_status']
