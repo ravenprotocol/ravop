@@ -660,77 +660,58 @@ class Graph(ParentClass):
     """A class to represent a graph object"""
 
     def __init__(self, id=None, **kwargs):
+
+        self.get_graph_id_endpoint = f"graph/get/graph_id"
+        res = make_request(self.get_graph_id_endpoint, "get")
+        g.graph_id = res.json()["graph_id"]
+        if id is None:
+            id = g.graph_id + 1
+            self.my_id = id - 1
+        
+        else:
+            self.my_id = id
+
         self.get_endpoint = f"graph/get/?id={id}"
         self.create_endpoint = f"graph/create/"
 
-        if id is None:
-            id = g.graph_id
 
-        if id is not None:
+        if id is not None and id<=g.graph_id:
             super().__init__(id=id)
         else:
             super().__init__(**kwargs)
-
+        
     # def add(self, op):
     #     """Add an op to the graph"""
     #     op.add_to_graph(self.id)
-    #
-    # @property
-    # def progress(self):
-    #     """Get the progress"""
-    #     stats = self.get_op_stats()
-    #     if stats["total_ops"] == 0:
-    #         return 0
-    #     progress = (
-    #                        (stats["computed_ops"] + stats["computing_ops"] + stats["failed_ops"])
-    #                        / stats["total_ops"]
-    #                ) * 100
-    #     return progress
-    #
-    # def get_op_stats(self):
-    #     """Get stats of all ops"""
-    #     ops = ravdb.get_graph_ops(graph_id=self.id)
-    #
-    #     pending_ops = 0
-    #     computed_ops = 0
-    #     computing_ops = 0
-    #     failed_ops = 0
-    #
-    #     for op in ops:
-    #         if op.status == "pending":
-    #             pending_ops += 1
-    #         elif op.status == "computed":
-    #             computed_ops += 1
-    #         elif op.status == "computing":
-    #             computing_ops += 1
-    #         elif op.status == "failed":
-    #             failed_ops += 1
-    #
-    #     total_ops = len(ops)
-    #     return {
-    #         "total_ops": total_ops,
-    #         "pending_ops": pending_ops,
-    #         "computing_ops": computing_ops,
-    #         "computed_ops": computed_ops,
-    #         "failed_ops": failed_ops,
-    #     }
-    #
+    
+    @property
+    def progress(self):
+        get_progress_endpoint = f"graph/op/get/progress/?id={self.my_id}"
+        res = make_request(get_progress_endpoint, "get")
+        return res.json()['progress']
+    
+    def get_op_stats(self):
+        """Get stats of all ops"""
+        get_op_stats_endpoint = f"graph/op/get/stats/?id={self.my_id}"
+        res = make_request(get_op_stats_endpoint, "get")
+        return res.json()
+
     # def clean(self):
     #     ravdb.delete_graph_ops(self._graph_db.id)
-    #
-    # @property
-    # def ops(self):
-    #     ops = ravdb.get_graph_ops(self.id)
-    #     return [Op(id=op.id) for op in ops]
-    #
-    # def print_ops(self):
-    #     """Print ops"""
-    #     for op in self.ops:
-    #         print(op)
-    #
-    # def get_ops_by_name(self, op_name, graph_id=None):
-    #     ops = ravdb.get_ops_by_name(op_name=op_name, graph_id=graph_id)
-    #     return [Op(id=op.id) for op in ops]
+    
+    @property
+    def ops(self):
+        """Get all ops associated with a graph"""
+        get_graph_ops_endpoint = f"graph/op/get/?id={self.my_id}"
+        res = make_request(get_graph_ops_endpoint,"get")
+        res = res.json()
+        return res
+    
+    def get_ops_by_name(self, op_name, graph_id=None):
+        get_ops_by_name_endpoint = f"graph/op/name/get/?op_name={op_name}&id={graph_id}"
+        res = make_request(get_ops_by_name_endpoint,"get")
+        res = res.json()
+        return res
 
     def __str__(self):
         return "Graph:\nId:{}\nStatus:{}\n".format(self.id, self.status)
