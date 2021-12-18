@@ -4,7 +4,7 @@ from .utils import Singleton
 @Singleton
 class Globals(object):
     def __init__(self):
-        self._default_graph_id = None
+        self._default_graph_id = 1
         self._eager_mode = False
 
     @property
