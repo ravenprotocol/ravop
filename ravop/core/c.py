@@ -712,6 +712,64 @@ class Graph(ParentClass):
         res = make_request(get_ops_by_name_endpoint,"get")
         res = res.json()
         return res
+    
+    def get_subgraphs(self):
+        get_subgraphs_endpoint = f"graph/subgraph/get/?id={self.my_id}"
+        res = make_request(get_subgraphs_endpoint,"get")
+        res = res.json()
+        cc = self.find_subgraphs(res)
+        return cc
+
+    def find_subgraphs(self,g_nodes):
+        current_graph = {}
+        for k in g_nodes:
+            if g_nodes[k] != 'null':
+                g_nodes[k] = ast.literal_eval(g_nodes[k])
+                g_nodes[k] = [i-1 for i in g_nodes[k]]
+            current_graph[int(k)-1] = g_nodes[k]
+        m = 0
+        for k in current_graph:
+            m += 1
+        sg = SubGraph(m)
+        for k in current_graph:
+            if current_graph[k] != 'null':
+                for i in current_graph[k]:
+                    sg.addEdge(int(k), int(i))
+
+        cc = sg.connectedComponents() 
+        subgraphs = []
+        for i in cc:
+            subgraphs.append([j+1 for j in i])
+
+        return subgraphs
 
     def __str__(self):
         return "Graph:\nId:{}\nStatus:{}\n".format(self.id, self.status)
+ 
+class SubGraph: 
+    def __init__(self, V):
+        self.V = V
+        self.adj = [[] for i in range(V)]
+ 
+    def DFSUtil(self, temp, v, visited):
+        visited[v] = True
+        temp.append(v)
+        for i in self.adj[v]:
+            if visited[i] == False:
+                temp = self.DFSUtil(temp, i, visited)
+        return temp
+ 
+    def addEdge(self, v, w):
+        self.adj[v].append(w)
+        self.adj[w].append(v)
+ 
+    def connectedComponents(self):
+        visited = []
+        cc = []
+        for i in range(self.V):
+            visited.append(False)
+        for v in range(self.V):
+            if visited[v] == False:
+                temp = []
+                cc.append(self.DFSUtil(temp, v, visited))
+        return cc
