@@ -1,5 +1,7 @@
+import ast
 import json
 from functools import wraps
+
 import numpy as np
 
 from ..globals import globals as g
@@ -133,7 +135,7 @@ class ParentClass(object):
         self.__get(self.get_endpoint)
 
     def __get(self, endpoint):
-        print('ENDPOINT: ',endpoint)
+        print('ENDPOINT: ', endpoint)
         res = make_request(endpoint, "get")
         print("Response:GET:", res.json())
         status_code = res.status_code
@@ -201,8 +203,8 @@ class Op(ParentClass):
                 super().__init__(id, **info)
 
     def wait_till_computed(self):
-        while self.get_status()!='computed':
-            pass    
+        while self.get_status() != 'computed':
+            pass
 
     def get_status(self):
         return make_request(f"op/status/?id={self.id}", "get").json()['op_status']
@@ -344,7 +346,6 @@ class Op(ParentClass):
     def __call__(self, *args, **kwargs):
         self.fetch_update()
         return self.get_output()
-
 
     def __add__(self, other):
         return add(self, other)
@@ -653,13 +654,21 @@ class Graph(ParentClass):
     """A class to represent a graph object"""
 
     def __init__(self, id=None, **kwargs):
+
+        self.get_graph_id_endpoint = f"graph/get/graph_id"
+        res = make_request(self.get_graph_id_endpoint, "get")
+        g.graph_id = res.json()["graph_id"]
+        if id is None:
+            id = g.graph_id + 1
+            self.my_id = id - 1
+
+        else:
+            self.my_id = id
+
         self.get_endpoint = f"graph/get/?id={id}"
         self.create_endpoint = f"graph/create/"
 
-        if id is None:
-            id = g.graph_id
-
-        if id is not None:
+        if id is not None and id <= g.graph_id:
             super().__init__(id=id)
         else:
             super().__init__(**kwargs)
@@ -667,63 +676,97 @@ class Graph(ParentClass):
     # def add(self, op):
     #     """Add an op to the graph"""
     #     op.add_to_graph(self.id)
-    #
-    # @property
-    # def progress(self):
-    #     """Get the progress"""
-    #     stats = self.get_op_stats()
-    #     if stats["total_ops"] == 0:
-    #         return 0
-    #     progress = (
-    #                        (stats["computed_ops"] + stats["computing_ops"] + stats["failed_ops"])
-    #                        / stats["total_ops"]
-    #                ) * 100
-    #     return progress
-    #
-    # def get_op_stats(self):
-    #     """Get stats of all ops"""
-    #     ops = ravdb.get_graph_ops(graph_id=self.id)
-    #
-    #     pending_ops = 0
-    #     computed_ops = 0
-    #     computing_ops = 0
-    #     failed_ops = 0
-    #
-    #     for op in ops:
-    #         if op.status == "pending":
-    #             pending_ops += 1
-    #         elif op.status == "computed":
-    #             computed_ops += 1
-    #         elif op.status == "computing":
-    #             computing_ops += 1
-    #         elif op.status == "failed":
-    #             failed_ops += 1
-    #
-    #     total_ops = len(ops)
-    #     return {
-    #         "total_ops": total_ops,
-    #         "pending_ops": pending_ops,
-    #         "computing_ops": computing_ops,
-    #         "computed_ops": computed_ops,
-    #         "failed_ops": failed_ops,
-    #     }
-    #
+
+    @property
+    def progress(self):
+        get_progress_endpoint = f"graph/op/get/progress/?id={self.my_id}"
+        res = make_request(get_progress_endpoint, "get")
+        return res.json()['progress']
+
+    def get_op_stats(self):
+        """Get stats of all ops"""
+        get_op_stats_endpoint = f"graph/op/get/stats/?id={self.my_id}"
+        res = make_request(get_op_stats_endpoint, "get")
+        return res.json()
+
     # def clean(self):
     #     ravdb.delete_graph_ops(self._graph_db.id)
-    #
-    # @property
-    # def ops(self):
-    #     ops = ravdb.get_graph_ops(self.id)
-    #     return [Op(id=op.id) for op in ops]
-    #
-    # def print_ops(self):
-    #     """Print ops"""
-    #     for op in self.ops:
-    #         print(op)
-    #
-    # def get_ops_by_name(self, op_name, graph_id=None):
-    #     ops = ravdb.get_ops_by_name(op_name=op_name, graph_id=graph_id)
-    #     return [Op(id=op.id) for op in ops]
+
+    @property
+    def ops(self):
+        """Get all ops associated with a graph"""
+        get_graph_ops_endpoint = f"graph/op/get/?id={self.my_id}"
+        res = make_request(get_graph_ops_endpoint, "get")
+        res = res.json()
+        return res
+
+    def get_ops_by_name(self, op_name, graph_id=None):
+        get_ops_by_name_endpoint = f"graph/op/name/get/?op_name={op_name}&id={graph_id}"
+        res = make_request(get_ops_by_name_endpoint, "get")
+        res = res.json()
+        return res
+
+    def get_subgraphs(self):
+        get_subgraphs_endpoint = f"graph/subgraph/get/?id={self.my_id}"
+        res = make_request(get_subgraphs_endpoint, "get")
+        res = res.json()
+        sub_graphs = res['subgraphs']
+        min_op_id = res['min_op_id']
+        cc = self.find_subgraphs(sub_graphs, min_op_id)
+        return cc
+
+    def find_subgraphs(self, g_nodes, min_op_id):
+        current_graph = {}
+        for k in g_nodes:
+            if g_nodes[k] != 'null':
+                g_nodes[k] = ast.literal_eval(g_nodes[k])
+                g_nodes[k] = [i - min_op_id - 1 for i in g_nodes[k]]
+            current_graph[int(k) - 1] = g_nodes[k]
+        m = 0
+        for k in current_graph:
+            m += 1
+        sg = SubGraph(m)
+
+        for k in current_graph:
+            if current_graph[k] != 'null':
+                for i in current_graph[k]:
+                    sg.addEdge(int(k), int(i))
+
+        cc = sg.connectedComponents()
+        subgraphs = []
+        for i in cc:
+            subgraphs.append([j + min_op_id + 1 for j in i])
+
+        return subgraphs
 
     def __str__(self):
         return "Graph:\nId:{}\nStatus:{}\n".format(self.id, self.status)
+
+
+class SubGraph:
+    def __init__(self, V):
+        self.V = V
+        self.adj = [[] for i in range(V)]
+
+    def DFSUtil(self, temp, v, visited):
+        visited[v] = True
+        temp.append(v)
+        for i in self.adj[v]:
+            if visited[i] == False:
+                temp = self.DFSUtil(temp, i, visited)
+        return temp
+
+    def addEdge(self, v, w):
+        self.adj[v].append(w)
+        self.adj[w].append(v)
+
+    def connectedComponents(self):
+        visited = []
+        cc = []
+        for i in range(self.V):
+            visited.append(False)
+        for v in range(self.V):
+            if visited[v] == False:
+                temp = []
+                cc.append(self.DFSUtil(temp, v, visited))
+        return cc

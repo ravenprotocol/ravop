@@ -4,7 +4,7 @@ from .utils import Singleton
 @Singleton
 class Globals(object):
     def __init__(self):
-        self._default_graph_id = None
+        self._default_graph_id = 1
         self._eager_mode = False
 
     @property
@@ -16,9 +16,9 @@ class Globals(object):
         return self._eager_mode
 
     @eager_mode.setter
-    def eager_mode(self,mode):
+    def eager_mode(self, mode):
         self._eager_mode = mode
-    
+
     @property
     def ravop_log_file(self):
         return self._ravop_log_file
@@ -33,4 +33,3 @@ class Globals(object):
 
 
 globals = Globals.Instance()
-
