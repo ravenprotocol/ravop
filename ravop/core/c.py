@@ -1,6 +1,7 @@
 import json
 from functools import wraps
 import numpy as np
+import ast
 import time
 import sys
 from ..globals import globals as g
@@ -717,20 +718,23 @@ class Graph(ParentClass):
         get_subgraphs_endpoint = f"graph/subgraph/get/?id={self.my_id}"
         res = make_request(get_subgraphs_endpoint,"get")
         res = res.json()
-        cc = self.find_subgraphs(res)
+        sub_graphs = res['subgraphs']
+        min_op_id = res['min_op_id']
+        cc = self.find_subgraphs(sub_graphs,min_op_id)
         return cc
 
-    def find_subgraphs(self,g_nodes):
+    def find_subgraphs(self,g_nodes,min_op_id):
         current_graph = {}
         for k in g_nodes:
             if g_nodes[k] != 'null':
                 g_nodes[k] = ast.literal_eval(g_nodes[k])
-                g_nodes[k] = [i-1 for i in g_nodes[k]]
+                g_nodes[k] = [i-min_op_id-1 for i in g_nodes[k]]
             current_graph[int(k)-1] = g_nodes[k]
         m = 0
         for k in current_graph:
             m += 1
         sg = SubGraph(m)
+
         for k in current_graph:
             if current_graph[k] != 'null':
                 for i in current_graph[k]:
@@ -739,9 +743,10 @@ class Graph(ParentClass):
         cc = sg.connectedComponents() 
         subgraphs = []
         for i in cc:
-            subgraphs.append([j+1 for j in i])
+            subgraphs.append([j+min_op_id+1 for j in i])
 
         return subgraphs
+
 
     def __str__(self):
         return "Graph:\nId:{}\nStatus:{}\n".format(self.id, self.status)
