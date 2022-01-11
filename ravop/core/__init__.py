@@ -1,9 +1,9 @@
-import ast
 import json
 from functools import wraps
-
 import numpy as np
-
+import ast
+import time
+import sys
 from ..globals import globals as g
 from ..strings import Operators, OpTypes, NodeTypes, functions, OpStatus
 from ..utils import make_request, convert_to_ndarray
@@ -117,8 +117,10 @@ def __create_math_op(*args, **kwargs):
     #     params=json.dumps(params),
     # )
     op = op.json()
-    print(type(op), op)
-    return Op(id=op["id"])
+    op = Op(id=op["id"])
+    if g.eager_mode:
+        op.wait_till_computed()
+    return op
 
 
 class ParentClass(object):
@@ -135,9 +137,9 @@ class ParentClass(object):
         self.__get(self.get_endpoint)
 
     def __get(self, endpoint):
-        print('ENDPOINT: ', endpoint)
+        # print('ENDPOINT: ',endpoint)
         res = make_request(endpoint, "get")
-        print("Response:GET:", res.json())
+        # print("Response:GET:", res.json())
         status_code = res.status_code
         res = res.json()
         if status_code == 200:
@@ -150,7 +152,7 @@ class ParentClass(object):
 
     def __create(self, endpoint, **kwargs):
         res = make_request(endpoint, "post", payload={**kwargs})
-        print("Response:POST:", res.json(), kwargs)
+        # print("Response:POST:", res.text, kwargs)
         status_code = res.status_code
         res = res.json()
         if status_code == 200:
@@ -202,9 +204,14 @@ class Op(ParentClass):
 
                 super().__init__(id, **info)
 
+
     def wait_till_computed(self):
-        while self.get_status() != 'computed':
-            pass
+        print('Waiting for Op id: ',self.id)
+        while self.get_status()!='computed':
+            time.sleep(0.1)
+        sys.stdout.write("\033[F") #back to previous line 
+        sys.stdout.write("\033[K") #clear line 
+       
 
     def get_status(self):
         return make_request(f"op/status/?id={self.id}", "get").json()['op_status']
@@ -346,6 +353,7 @@ class Op(ParentClass):
     def __call__(self, *args, **kwargs):
         self.fetch_update()
         return self.get_output()
+
 
     def __add__(self, other):
         return add(self, other)
@@ -661,28 +669,30 @@ class Graph(ParentClass):
         if id is None:
             id = g.graph_id + 1
             self.my_id = id - 1
-
+        
         else:
             self.my_id = id
 
         self.get_endpoint = f"graph/get/?id={id}"
         self.create_endpoint = f"graph/create/"
 
-        if id is not None and id <= g.graph_id:
+        
+        if id is not None and id<=g.graph_id:
             super().__init__(id=id)
         else:
             super().__init__(**kwargs)
+        
 
     # def add(self, op):
     #     """Add an op to the graph"""
     #     op.add_to_graph(self.id)
-
+    
     @property
     def progress(self):
         get_progress_endpoint = f"graph/op/get/progress/?id={self.my_id}"
         res = make_request(get_progress_endpoint, "get")
         return res.json()['progress']
-
+    
     def get_op_stats(self):
         """Get stats of all ops"""
         get_op_stats_endpoint = f"graph/op/get/stats/?id={self.my_id}"
@@ -691,37 +701,38 @@ class Graph(ParentClass):
 
     # def clean(self):
     #     ravdb.delete_graph_ops(self._graph_db.id)
-
+    
     @property
     def ops(self):
         """Get all ops associated with a graph"""
         get_graph_ops_endpoint = f"graph/op/get/?id={self.my_id}"
-        res = make_request(get_graph_ops_endpoint, "get")
+        res = make_request(get_graph_ops_endpoint,"get")
         res = res.json()
         return res
-
+    
     def get_ops_by_name(self, op_name, graph_id=None):
         get_ops_by_name_endpoint = f"graph/op/name/get/?op_name={op_name}&id={graph_id}"
-        res = make_request(get_ops_by_name_endpoint, "get")
+        res = make_request(get_ops_by_name_endpoint,"get")
         res = res.json()
         return res
-
+    
     def get_subgraphs(self):
         get_subgraphs_endpoint = f"graph/subgraph/get/?id={self.my_id}"
-        res = make_request(get_subgraphs_endpoint, "get")
+        res = make_request(get_subgraphs_endpoint,"get")
         res = res.json()
         sub_graphs = res['subgraphs']
         min_op_id = res['min_op_id']
-        cc = self.find_subgraphs(sub_graphs, min_op_id)
+        cc = self.find_subgraphs(sub_graphs,min_op_id)
         return cc
 
-    def find_subgraphs(self, g_nodes, min_op_id):
+    def find_subgraphs(self,g_nodes,min_op_id):
+        update_subgraph_op_mapping_endpoint = f"subgraph/op/mappings/"
         current_graph = {}
         for k in g_nodes:
             if g_nodes[k] != 'null':
                 g_nodes[k] = ast.literal_eval(g_nodes[k])
-                g_nodes[k] = [i - min_op_id - 1 for i in g_nodes[k]]
-            current_graph[int(k) - 1] = g_nodes[k]
+                g_nodes[k] = [i-min_op_id-1 for i in g_nodes[k]]
+            current_graph[int(k)-1] = g_nodes[k]
         m = 0
         for k in current_graph:
             m += 1
@@ -732,22 +743,30 @@ class Graph(ParentClass):
                 for i in current_graph[k]:
                     sg.addEdge(int(k), int(i))
 
-        cc = sg.connectedComponents()
-        subgraphs = []
+        cc = sg.connectedComponents() 
+        subgraphs_list = []
         for i in cc:
-            subgraphs.append([j + min_op_id + 1 for j in i])
+            subgraphs_list.append([j+min_op_id+1 for j in i])
+
+        max_subgraph_id = len(subgraphs_list)
+        subgraphs = {}
+
+        for i in range(max_subgraph_id):
+            subgraphs[i+1] = subgraphs_list[i]
+
+        res = make_request(update_subgraph_op_mapping_endpoint,"post",payload=subgraphs)
 
         return subgraphs
 
+
     def __str__(self):
         return "Graph:\nId:{}\nStatus:{}\n".format(self.id, self.status)
-
-
-class SubGraph:
+ 
+class SubGraph: 
     def __init__(self, V):
         self.V = V
         self.adj = [[] for i in range(V)]
-
+ 
     def DFSUtil(self, temp, v, visited):
         visited[v] = True
         temp.append(v)
@@ -755,11 +774,11 @@ class SubGraph:
             if visited[i] == False:
                 temp = self.DFSUtil(temp, i, visited)
         return temp
-
+ 
     def addEdge(self, v, w):
         self.adj[v].append(w)
         self.adj[w].append(v)
-
+ 
     def connectedComponents(self):
         visited = []
         cc = []
@@ -770,3 +789,4 @@ class SubGraph:
                 temp = []
                 cc.append(self.DFSUtil(temp, v, visited))
         return cc
+
