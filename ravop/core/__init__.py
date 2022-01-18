@@ -87,21 +87,25 @@ def __create_math_op(*args, **kwargs):
 
         node_type = NodeTypes.MIDDLE
 
-    op_ids = json.dumps(op_ids)
+    if op_ids is not None:
+        op_ids = json.dumps(op_ids)
     node_type = kwargs.get("node_type", node_type)
     op_type = kwargs.get("op_type", op_type)
     status = kwargs.get("status", OpStatus.PENDING)
     operator = kwargs.get("operator", None)
+    complexity = kwargs.get("complexity", None)
 
     op = make_request("op/create/", "post", {
         "name": kwargs.get("name", None),
         "graph_id": g.graph_id,
+        "subgraph_id": g.sub_graph_id,
         "node_type": node_type,
         "inputs": op_ids,
         "outputs": None,
         "op_type": op_type,
         "operator": operator,
         "status": status,
+        "complexity": complexity,
         "params": json.dumps(params),
     })
 
@@ -199,6 +203,7 @@ class Op(ParentClass):
             if (inputs is not None or outputs is not None) and operator is not None:
                 info = self.extract_info(**kwargs)
                 info['graph_id'] = g.graph_id
+                info['subgraph_id'] = g.sub_graph_id
                 info['params'] = json.dumps(kwargs)
                 info["name"] = kwargs.get("name", None)
 
@@ -352,6 +357,7 @@ class Op(ParentClass):
 
     def __call__(self, *args, **kwargs):
         self.fetch_update()
+        g.sub_graph_id += 1
         return self.get_output()
 
 

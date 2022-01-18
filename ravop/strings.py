@@ -87,6 +87,10 @@ class Operators(object):
 
     SET_VALUE = "set_value"
 
+    FEDERATED_MEAN ="federated_mean"
+    FEDERATED_VARIANCE ="federated_variance"
+    FEDERATED_STANDARD_DEVIATION ="federated_standard_deviation"
+
 
 class TFJSOperators(object):
     SIGMOID = "sigmoid"
@@ -156,7 +160,14 @@ functions = {'lin': Operators.LINEAR,
              'sign':  Operators.SIGN, 
              'foreach':  Operators.FOREACH,
              'one_hot_encoding':  Operators.ONE_HOT_ENCODING,
-             'set_value':  Operators.SET_VALUE}
+             'set_value':  Operators.SET_VALUE,
+
+             # Federated functions
+
+             'federated_mean': Operators.FEDERATED_MEAN,
+             'federated_variance': Operators.FEDERATED_VARIANCE,
+             'federated_standard_deviation': Operators.FEDERATED_STANDARD_DEVIATION,
+             }
 
 
 class Status(object):
