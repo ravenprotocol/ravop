@@ -6,6 +6,8 @@ from functools import wraps
 
 import numpy as np
 
+from ..compute import compute_locally
+from ..config import LOCAL_COMPUTE
 from ..globals import globals as g
 from ..strings import Operators, OpTypes, NodeTypes, functions, OpStatus
 from ..utils import make_request, convert_to_ndarray
@@ -51,6 +53,7 @@ def pi():
 
 
 def __create_math_op(*args, **kwargs):
+
     params = dict()
     for key, value in kwargs.items():
         if key in ["node_type", "op_type", "status", "name", "operator"]:

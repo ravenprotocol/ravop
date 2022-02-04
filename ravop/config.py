@@ -22,3 +22,5 @@ RAVSOCK_SERVER_URL = os.environ.get("RAVSOCK_SERVER_URL", "http://0.0.0.0:9999/"
 RDF_DATABASE_URI = "sqlite:///{}/rdf.db?check_same_thread=False".format(BASE_DIR)
 # RDF_DATABASE_URI = "mysql://root:qwerty12345.A@localhost/rdf"
 RDF_REDIS_URI = os.environ.get("RDF_REDIS_URI", "redis://localhost:6379?db=0")
+
+LOCAL_COMPUTE = True
