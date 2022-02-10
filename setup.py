@@ -2,15 +2,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='ravop',
-    version='0.2-alpha',
+    version='0.3',
     packages=find_packages(),
     install_requires=[
-        "SQLAlchemy_Utils==0.37.2",
-        "numpy==1.20.1",
-        "redis==3.5.3",
-        "SQLAlchemy==1.3.23",
-        "gevent_socketio==0.3.6"
-    ],
-    dependency_links=[
+        "numpy==1.21.5",
+        "python-socketio==4.5.1",
+        "requests",
+        "python-engineio==3.13.0"
     ]
 )

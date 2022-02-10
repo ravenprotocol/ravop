@@ -25,7 +25,7 @@ class SocketClient(object):
 
     def connect(self):
         self.client = socketio.Client()
-        self.client.register_namespace(RavOPNamespace('/ravop'))
+        self.client.register_namespace(RavOPNamespace('/client'))
         self.client.connect(self.url+"?client_name=ravop")
         return self.client
 

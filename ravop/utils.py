@@ -1,4 +1,3 @@
-import glob
 import json
 import os
 import shutil
@@ -83,25 +82,9 @@ def copy_data(source, destination):
         print("Error occurred while copying file.")
 
 
-def inform_server():
+def inform():
     socket_client = SocketClient(server_url=RAVSOCK_SERVER_URL).connect()
-    socket_client.emit("inform_server", data={"type": "event"}, namespace="/ravop")
-
-
-def reset():
-    for file_path in glob.glob("files/*"):
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    if not os.path.exists("files"):
-        os.makedirs("files")
-
-    # Delete and create database
-    reset_database()
-
-    # Clear redis queues
-    from .db import clear_redis_queues
-    clear_redis_queues()
+    socket_client.emit("inform", data={"type": "event"}, namespace="/ravop")
 
 
 def make_request(endpoint, method, payload={}, headers=None):
