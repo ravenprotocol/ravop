@@ -111,17 +111,6 @@ def __create_math_op(*args, **kwargs):
         "params": json.dumps(params),
     })
 
-    # op = ravdb.create_op(
-    #     name=kwargs.get("name", None),
-    #     graph_id=g.graph_id,
-    #     node_type=node_type,
-    #     inputs=op_ids,
-    #     outputs=None,
-    #     op_type=op_type,
-    #     operator=operator,
-    #     status=status,
-    #     params=json.dumps(params),
-    # )
     op = op.json()
     op = Op(id=op["id"])
     if g.eager_mode:
@@ -260,72 +249,6 @@ class Op(ParentClass):
             "outputs": outputs,
             "operator": operator
         }
-
-    # def __create(self, operator, inputs=None, outputs=None, **kwargs):
-    #     if (inputs is not None or outputs is not None) and operator is not None:
-    #         # Figure out node type
-    #         if inputs is None and outputs is not None:
-    #             node_type = NodeTypes.INPUT
-    #         elif inputs is not None and outputs is None:
-    #             node_type = NodeTypes.MIDDLE
-    #         else:
-    #             raise Exception("Invalid node type")
-    #
-    #         if inputs is not None:
-    #             if len(inputs) == 1:
-    #                 op_type = OpTypes.UNARY
-    #             elif len(inputs) == 2:
-    #                 op_type = OpTypes.BINARY
-    #             else:
-    #                 raise Exception("Invalid number of inputs")
-    #         else:
-    #             op_type = OpTypes.OTHER
-    #
-    #         if outputs is None:
-    #             status = OpStatus.PENDING
-    #         else:
-    #             status = OpStatus.COMPUTED
-    #
-    #         inputs = json.dumps(inputs)
-    #         outputs = json.dumps(outputs)
-    #
-    #         # op = ravdb.create_op(
-    #         #     name=kwargs.get("name", None),
-    #         #     graph_id=g.graph_id,
-    #         #     node_type=node_type,
-    #         #     inputs=inputs,
-    #         #     outputs=outputs,
-    #         #     op_type=op_type,
-    #         #     operator=operator,
-    #         #     status=status,
-    #         #     params=json.dumps(kwargs),
-    #         # )
-    #         payload = {
-    #             "name": kwargs.get("name", None),
-    #             "graph_id": g.graph_id,
-    #             "node_type": node_type,
-    #             "inputs": inputs,
-    #             "outputs": outputs,
-    #             "op_type": op_type,
-    #             "operator": operator,
-    #             "status": status,
-    #             "params": json.dumps(kwargs),
-    #         }
-    #         op = make_request("op/create/", "post", payload)
-    #         op = op.json()
-    #         print(type(op), op)
-    #         return op['op_id']
-    #     else:
-    #         raise Exception("Invalid parameters")
-
-    # def to_scalar(self):
-    #     self._op_db = ravdb.refresh(self._op_db)
-    #     if self._op_db.outputs is None or self._op_db.outputs == "null":
-    #         return None
-    #
-    #     data_id = json.loads(self._op_db.outputs)[0]
-    #     data = Data(id=data_id)
-    #     return Scalar(data.value)
 
     def get_output(self):
         return self.get_data().get_value()
@@ -568,101 +491,6 @@ class Data(ParentClass):
                 return self.value.shape
         return None
 
-
-# class Data(object):
-#     def __init__(self, id=None, **kwargs):
-#         print(kwargs)
-#
-#         for k, v in kwargs.items():
-#             self.__dict__["_{}".format(k)] = v
-#
-#         print(self.dtype)
-#
-#         if id is not None:
-#             res = make_request(f"data/get?id={id}", "get")
-#             if res.status_code == 200:
-#                 data_dict = res.json()
-#             # self._data_db = ravdb.get_data(data_id=id)
-#             else:
-#                 raise Exception("Invalid data id")
-#
-#         elif self.value is not None and self.dtype is not None:
-#             if self.dtype == "ndarray":
-#                 if type(self.value).__name__ == "list":
-#                     value = np.array(self.value)
-#                 elif type(self.value).__name__ == "str":
-#                     x = json.loads(self.value)
-#                     if type(x).__name__ == "list":
-#                         value = np.array(self.value)
-#             elif self.dtype == "file":
-#                 pass
-#
-#             data_dict = self.__create(value=self.value, dtype=self.dtype)
-#
-#             if not data_dict:
-#                 raise Exception("Unable to create data")
-#             # if self._data_db is None:
-#             #     raise Exception("Unable to create data")
-#         print(self.__dict__)
-#
-#     def __create(self, value, dtype):
-#         print("DTYPEEEE", dtype, "VALUEEEE", value)
-#         res = make_request("data/create/", "post", {"value": value, "dtype": dtype})
-#         print(res)
-#         res = res.json()
-#         for k, v in res.items():
-#             self.__dict__["_{}".format(k)] = v
-#         print(res, "DICT", res["id"])
-#         # data = ravdb.create_data(type=dtype)
-#
-#         # if dtype == "ndarray":
-#         #     file_path = dump_data(data.id, value)
-#         #     # Update file path
-#         #     ravdb.update_data(data, file_path=file_path)
-#         # elif dtype in ["int", "float"]:
-#         #     ravdb.update_data(data, value=value)
-#
-#         # elif dtype == "file":
-#         #     filepath = os.path.join(
-#         #         DATA_FILES_PATH, "data_{}_{}".format(data.id, value)
-#         #     )
-#         #     copy_data(source=value, destination=filepath)
-#         #     ravdb.update_data(data, file_path=filepath)
-#
-#         return res
-#
-#     @property
-#     def value(self):
-#         if self.dtype == "ndarray":
-#             file_path = self.file_path
-#             value = np.load(file_path, allow_pickle=True)
-#             return value
-#         elif self.dtype in ["int", "float"]:
-#             if self.dtype == "int":
-#                 return int(self._value)
-#             elif self.dtype == "float":
-#                 return float(self._value)
-#         elif self.dtype == "file":
-#             return self.file_path
-#
-#     @property
-#     def id(self):
-#         return self._id
-#
-#     @property
-#     def dtype(self):
-#         return self._dtype
-#
-#     @property
-#     def file_path(self):
-#         return self._file_path
-#
-#     def __str__(self):
-#         return "Data:\nId:{}\nDtype:{}\n".format(self.id, self.dtype)
-#
-#     def __call__(self, *args, **kwargs):
-#         return self.value
-#
 
 class Graph(ParentClass):
     """A class to represent a graph object"""
