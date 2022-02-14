@@ -1,11 +1,6 @@
 # RavOp
 Op is the fundamental unit of RDF. RavOp is our library to work with ops. You can create ops, interact with ops, and create scalars and tensors. RavOp is a crucial building block of the framework. It can be used to write various algorithms, formulas, and mathematical calculations.
 
-### How to install ravop
-
-    python setup.py install
+### Documentation
     
-### Set RAVSOCK_SERVER_URL in the ravop/config.py file
-
-  
-    RAVSOCK_SERVER_URL = "http://0.0.0.0:9999/"
+[RavOp documentation](https://ravenprotocol.gitbook.io/raven-distribution-framework/ravop)
