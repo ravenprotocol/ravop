@@ -281,7 +281,8 @@ class Op(ParentClass):
     def __call__(self, *args, **kwargs):
         self.wait_till_computed()
         self.fetch_update()
-        g.sub_graph_id += 1
+        temp = make_request(f"global/subgraph/update/id/?graph_id={g.graph_id}", "get").json()['global_subgraph_id']
+        g.sub_graph_id = temp + 1
         return self.get_output()
 
     def __add__(self, other):
