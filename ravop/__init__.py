@@ -3,4 +3,3 @@ from .strings import Status, OpStatus, GraphStatus, MappingStatus
 from .core import Op, Scalar, Tensor, t, Data, Graph, epsilon, one, minus_one, inf, pi, File
 from .globals import globals
 from .core import *
-from .compute import compute_locally
