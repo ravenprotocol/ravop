@@ -203,9 +203,21 @@ class Op(ParentClass):
     def wait_till_computed(self):
         print('Waiting for Op id: ', self.id)
         while self.get_status() != 'computed':
+            if self.fetch_retries() == "failed":
+                end_endpoint = f"graph/end/?id={g.graph_id}"
+                res = make_request(end_endpoint, "get")
+                print("\n------------------------------")
+                print(res.json()['message'])
+                self.fetch_update()
+                print("Error: ",self.message)
+                sys.exit()
             time.sleep(0.1)
         sys.stdout.write("\033[F")  # back to previous line
         sys.stdout.write("\033[K")  # clear line
+
+    def fetch_retries(self):
+        res = make_request(f"graph/get/?id={g.graph_id}", "get").json()['status']
+        return res
 
     def get_status(self):
         return make_request(f"op/status/?id={self.id}", "get").json()['op_status']
