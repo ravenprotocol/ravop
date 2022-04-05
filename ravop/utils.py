@@ -5,7 +5,7 @@ import shutil
 import numpy as np
 import requests
 
-from .config import DATA_FILES_PATH, RAVSOCK_SERVER_URL
+from .config import DATA_FILES_PATH, RAVSOCK_SERVER_URL, TEMP_FILES_PATH
 from .socket_client import SocketClient
 
 
@@ -109,3 +109,14 @@ def convert_to_ndarray(x):
 
 def convert_ndarray_to_str(x):
     return str(x.tolist())
+
+def dump_data(data_id, value):
+    """
+    Dump ndarray to file
+    """
+    file_path = os.path.join(TEMP_FILES_PATH, "data_{}.npy".format(data_id))
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    np.save(file_path, value)
+    return file_path
