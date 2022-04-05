@@ -1,6 +1,8 @@
 import ast
+import imp
 import json
 import sys
+import os
 import time
 from functools import wraps
 
@@ -8,7 +10,25 @@ import numpy as np
 
 from ..globals import globals as g
 from ..strings import OpTypes, NodeTypes, functions, OpStatus
-from ..utils import make_request, convert_to_ndarray
+from ..utils import make_request, convert_to_ndarray, dump_data
+from .ftp_client import get_client, check_credentials
+
+ftp_client = None
+ftp_username = None
+ftp_password = None
+
+def initialize(token):
+    global ftp_client, ftp_username, ftp_password
+    print("Creating FTP developer credentials...")
+    create_endpoint = f"ravop/developer/add/?token={token}"
+    res = make_request(create_endpoint, "get")
+    res = res.json()
+    username = res['username']
+    password = res['password']
+    time.sleep(2)
+    ftp_client = get_client(username=username, password=password)
+    ftp_username = username
+    ftp_password = password
 
 
 def t(value, dtype="ndarray", **kwargs):
@@ -470,18 +490,38 @@ class File(Op):
 
 class Data(ParentClass):
     def __init__(self, value=None, id=None, **kwargs):
+        global ftp_client
         self.get_endpoint = f"data/get/?id={id}"
         self.create_endpoint = f"data/create/"
 
         # value = kwargs.get("value", None)
-        if value is not None and isinstance(value, np.ndarray):
-            value = value.tolist()
-            kwargs['value'] = value
-        else:
-            kwargs['value'] = value
+        # if value is not None and isinstance(value, np.ndarray):
+        #     value = value.tolist()
+        #     kwargs['value'] = value
+        # else:
+        #     kwargs['value'] = value
+        if id is None:
+
+            if value is not None:
+                value = convert_to_ndarray(value)
+                dtype = value.dtype
+                kwargs['dtype'] = str(dtype)
+                kwargs['username'] = ftp_username
+                # if kwargs.get("value", None) is not None:
+                #     kwargs['value'] = "uploaded in FTP"
 
         super().__init__(id, **kwargs)
+        # print("Username and password: ", ftp_username, ftp_password)
+        # print("Check ftp creds: ",check_credentials(ftp_username,ftp_password))
 
+        if id is None:
+            if value is not None:
+                #value = convert_to_ndarray(value)
+                file_path = dump_data(self.id, value)
+                ftp_client.upload(file_path, os.path.basename(file_path))
+                # print("\nFile uploaded!", file_path)
+                os.remove(file_path)
+             
     def __call__(self, *args, **kwargs):
         self.fetch_update()
         return self.get_value()
