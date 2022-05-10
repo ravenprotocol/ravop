@@ -7,8 +7,10 @@ import time
 from functools import wraps
 
 import numpy as np
+import speedtest
 
 from ..globals import globals as g
+from ..config import FTP_SERVER_URL
 from ..strings import OpTypes, NodeTypes, functions, OpStatus
 from ..utils import make_request, convert_to_ndarray, dump_data
 from .ftp_client import get_client, check_credentials
@@ -26,6 +28,25 @@ def initialize(token):
     username = res['username']
     password = res['password']
     time.sleep(2)
+
+    if FTP_SERVER_URL != "localhost" and FTP_SERVER_URL != "0.0.0.0":
+        wifi = speedtest.Speedtest()
+        upload_speed = int(wifi.upload())
+        upload_speed = upload_speed / 8
+        if upload_speed <= 3000000:
+            upload_multiplier = 1
+        elif upload_speed < 80000000:
+            upload_multiplier = int((upload_speed/80000000) * 1000)
+        else:
+            upload_multiplier = 1000
+
+        g.ftp_upload_blocksize = 8192 * upload_multiplier
+
+    else:
+        g.ftp_upload_blocksize = 8192 * 1000
+
+    print("FTP Upload Blocksize: ", g.ftp_upload_blocksize)
+
     ftp_client = get_client(username=username, password=password)
     ftp_username = username
     ftp_password = password
@@ -501,21 +522,29 @@ class Data(ParentClass):
         # else:
         #     kwargs['value'] = value
         if id is None:
-
+             
             if value is not None:
                 value = convert_to_ndarray(value)
-                dtype = value.dtype
-                kwargs['dtype'] = str(dtype)
-                kwargs['username'] = ftp_username
+
+                byte_size = value.size * value.itemsize
+                if byte_size > 0 * 1000000:
+                    dtype = value.dtype
+                    kwargs['dtype'] = str(dtype)
+                    kwargs['username'] = ftp_username
                 # if kwargs.get("value", None) is not None:
                 #     kwargs['value'] = "uploaded in FTP"
+                else:
+                    dtype = value.dtype
+                    kwargs['dtype'] = str(dtype)
+                    kwargs['value'] = value.tolist()
+                    kwargs['username'] = ftp_username
 
         super().__init__(id, **kwargs)
         # print("Username and password: ", ftp_username, ftp_password)
         # print("Check ftp creds: ",check_credentials(ftp_username,ftp_password))
 
         if id is None:
-            if value is not None:
+            if value is not None and byte_size > 0 * 1000000:
                 #value = convert_to_ndarray(value)
                 file_path = dump_data(self.id, value)
                 ftp_client.upload(file_path, os.path.basename(file_path))
