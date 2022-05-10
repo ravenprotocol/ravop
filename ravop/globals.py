@@ -7,6 +7,7 @@ class Globals(object):
         self._default_graph_id = 1
         self._default_sub_graph_id = 1
         self._eager_mode = False
+        self._ftp_upload_blocksize = 8192
 
     @property
     def graph_id(self):
@@ -43,6 +44,14 @@ class Globals(object):
     @sub_graph_id.deleter
     def sub_graph_id(self):
         del self._default_sub_graph_id
+
+    @property
+    def ftp_upload_blocksize(self):
+        return self._ftp_upload_blocksize
+
+    @ftp_upload_blocksize.setter
+    def ftp_upload_blocksize(self, ftp_upload_blocksize):
+        self._ftp_upload_blocksize = ftp_upload_blocksize
 
 
 globals = Globals.Instance()
