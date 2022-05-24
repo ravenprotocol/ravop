@@ -52,6 +52,7 @@ class Operators(object):
     SLICE = "slice"
     FIND_INDICES = "find_indices"
     SHAPE = "shape"
+    PAD = "pad"
 
     # Comparison Operators
     GREATER = "greater"
@@ -171,6 +172,7 @@ functions = {'lin': Operators.LINEAR,
              'prod': Operators.PROD,
              'flatten': Operators.FLATTEN,
              'ravel': Operators.RAVEL,
+             'pad': Operators.PAD,
 
              # Federated functions
 
