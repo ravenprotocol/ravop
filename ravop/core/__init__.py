@@ -19,10 +19,12 @@ ftp_client = None
 ftp_username = None
 ftp_password = None
 
-def initialize(token):
+def initialize(ravenverse_token, username):
     global ftp_client, ftp_username, ftp_password
     print("Creating FTP developer credentials...")
-    create_endpoint = f"ravop/developer/add/?token={token}"
+    g.ravenverse_token = ravenverse_token
+    print("ravenverse token set: ", g.ravenverse_token, ravenverse_token)
+    create_endpoint = f"ravop/developer/add/?username={username}"
     res = make_request(create_endpoint, "get")
     res = res.json()
     username = res['username']
