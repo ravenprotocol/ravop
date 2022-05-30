@@ -1,4 +1,4 @@
-from .utils import Singleton
+from .singleton_utils import Singleton
 
 
 @Singleton
@@ -8,6 +8,7 @@ class Globals(object):
         self._default_sub_graph_id = 1
         self._eager_mode = False
         self._ftp_upload_blocksize = 8192
+        self._ravenverse_token = None
 
     @property
     def graph_id(self):
@@ -52,6 +53,14 @@ class Globals(object):
     @ftp_upload_blocksize.setter
     def ftp_upload_blocksize(self, ftp_upload_blocksize):
         self._ftp_upload_blocksize = ftp_upload_blocksize
+
+    @property
+    def ravenverse_token(self):
+        return self._ravenverse_token
+
+    @ravenverse_token.setter
+    def ravenverse_token(self, ravenverse_token):
+        self._ravenverse_token = ravenverse_token
 
 
 globals = Globals.Instance()
