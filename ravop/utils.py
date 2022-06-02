@@ -59,7 +59,7 @@ def inform():
 
 
 def make_request(endpoint, method, payload={}, headers=None):
-    headers = {"Authorization" : g.ravenverse_token}
+    headers = {"token" : g.ravenverse_token}
     if method == "post":
         return requests.post(
             "{}{}".format(RAVSOCK_SERVER_URL, endpoint), json=payload, headers=headers

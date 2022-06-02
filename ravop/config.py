@@ -1,7 +1,7 @@
 import os
 from os.path import expanduser
 
-BASE_DIR = os.path.join(expanduser("~"), "rdf/ravop")
+BASE_DIR = os.path.join(expanduser("~"), "ravenverse/ravop")
 DATA_FILES_PATH = os.path.join(BASE_DIR, "files")
 
 TEMP_FILES_BASE_PATH = os.path.join(expanduser("~"), os.getcwd())
