@@ -52,6 +52,7 @@ class Operators(object):
     SLICE = "slice"
     FIND_INDICES = "find_indices"
     SHAPE = "shape"
+    PAD = "pad"
 
     # Comparison Operators
     GREATER = "greater"
@@ -81,6 +82,11 @@ class Operators(object):
     WHERE = "where"
     SIGN = "sign"
     FOREACH = "foreach"
+    CLIP = "clip"
+    RANDOM_UNIFORM = "random_uniform"
+    PROD = "prod"
+    FLATTEN = "flatten"
+    RAVEL = "ravel"
 
     # Data Preprocessing
     ONE_HOT_ENCODING = "one_hot_encoding"
@@ -161,6 +167,12 @@ functions = {'lin': Operators.LINEAR,
              'foreach': Operators.FOREACH,
              'one_hot_encoding': Operators.ONE_HOT_ENCODING,
              'set_value': Operators.SET_VALUE,
+             'clip': Operators.CLIP,
+             'random_uniform': Operators.RANDOM_UNIFORM,
+             'prod': Operators.PROD,
+             'flatten': Operators.FLATTEN,
+             'ravel': Operators.RAVEL,
+             'pad': Operators.PAD,
 
              # Federated functions
 

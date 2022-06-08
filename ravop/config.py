@@ -17,4 +17,6 @@ RAVSOCK_SERVER_URL = os.environ.get("RAVSOCK_SERVER_URL", "http://0.0.0.0:9999/"
 
 LOCAL_COMPUTE = False
 
-FTP_SERVER_URL = "localhost"
+FTP_SERVER_URL = "0.0.0.0"
+
+FTP_BLOCKSIZE = 8192 * 10 #bytes
