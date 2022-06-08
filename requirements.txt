@@ -2,3 +2,4 @@ numpy==1.21.5
 requests
 python-socketio==5.4.1
 python-engineio==4.2.1
+python-dotenv
