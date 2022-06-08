@@ -7,8 +7,7 @@ Op is the fundamental unit of Ravenverse. Ravop is our library to work with ops.
 
 #### Create a .env file and put the following credentials there:
 
-    RAVENVERSE_HOST=0.0.0.0
-    RAVENVERSE_PORT=9999
+    RAVENVERSE_URL=http://0.0.0.0:9999
     RAVENVERSE_FTP_HOST=0.0.0.0
 
 ### License

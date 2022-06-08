@@ -1,30 +1,29 @@
-import ast
-import imp
 import json
-import sys
 import os
+import sys
 import time
 from functools import wraps
 
 import numpy as np
 import speedtest
 
+from .ftp_client import get_client, check_credentials
+from ..config import RAVENVERSE_FTP_HOST
 from ..globals import globals as g
-from ..config import FTP_SERVER_URL
 from ..strings import OpTypes, NodeTypes, functions, OpStatus
 from ..utils import make_request, convert_to_ndarray, dump_data
-from .ftp_client import get_client, check_credentials
 
 ftp_client = None
 ftp_username = None
 ftp_password = None
 
-def initialize(ravenverse_token):#, username):
+
+def initialize(ravenverse_token):  # , username):
     global ftp_client, ftp_username, ftp_password
     print("Creating FTP developer credentials...")
     g.ravenverse_token = ravenverse_token
     # print("ravenverse token set: ", g.ravenverse_token, ravenverse_token)
-    create_endpoint = f"ravop/developer/add/"#?username={username}"
+    create_endpoint = f"ravop/developer/add/"  # ?username={username}"
     res = make_request(create_endpoint, "get")
     res = res.json()
 
@@ -36,14 +35,14 @@ def initialize(ravenverse_token):#, username):
     password = res['password']
     time.sleep(2)
 
-    if FTP_SERVER_URL != "localhost" and FTP_SERVER_URL != "0.0.0.0":
+    if RAVENVERSE_FTP_HOST != "localhost" and RAVENVERSE_FTP_HOST != "0.0.0.0":
         wifi = speedtest.Speedtest()
         upload_speed = int(wifi.upload())
         upload_speed = upload_speed / 8
         if upload_speed <= 3000000:
             upload_multiplier = 1
         elif upload_speed < 80000000:
-            upload_multiplier = int((upload_speed/80000000) * 1000)
+            upload_multiplier = int((upload_speed / 80000000) * 1000)
         else:
             upload_multiplier = 1000
 
@@ -257,7 +256,7 @@ class Op(ParentClass):
                 print("\n------------------------------")
                 print(res.json()['message'])
                 self.fetch_update()
-                print("Error: ",self.message)
+                print("Error: ", self.message)
                 sys.exit()
             time.sleep(0.1)
         sys.stdout.write("\033[F")  # back to previous line
@@ -529,7 +528,7 @@ class Data(ParentClass):
         # else:
         #     kwargs['value'] = value
         if id is None:
-             
+
             if value is not None:
                 value = convert_to_ndarray(value)
 
@@ -552,12 +551,12 @@ class Data(ParentClass):
 
         if id is None:
             if value is not None and byte_size > 0 * 1000000:
-                #value = convert_to_ndarray(value)
+                # value = convert_to_ndarray(value)
                 file_path = dump_data(self.id, value)
                 ftp_client.upload(file_path, os.path.basename(file_path))
                 # print("\nFile uploaded!", file_path)
                 os.remove(file_path)
-             
+
     def __call__(self, *args, **kwargs):
         self.fetch_update()
         return self.get_value()

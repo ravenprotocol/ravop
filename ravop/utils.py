@@ -1,15 +1,15 @@
 import json
 import os
+import pickle as pkl
 import shutil
 
 import numpy as np
 import requests
 
-from .config import DATA_FILES_PATH, RAVSOCK_SERVER_URL, TEMP_FILES_PATH
+from .config import DATA_FILES_PATH, RAVENVERSE_URL, TEMP_FILES_PATH
+from .globals import globals as g
 from .socket_client import SocketClient
 
-import pickle as pkl
-from .globals import globals as g
 
 def save_data_to_file(data_id, data):
     """
@@ -38,6 +38,7 @@ def delete_data_file(data_id):
     if os.path.exists(file_path):
         os.remove(file_path)
 
+
 def copy_data(source, destination):
     try:
         shutil.copy(source, destination)
@@ -54,19 +55,19 @@ def copy_data(source, destination):
 
 
 def inform():
-    socket_client = SocketClient(server_url=RAVSOCK_SERVER_URL).connect()
+    socket_client = SocketClient(server_url=RAVENVERSE_URL).connect()
     socket_client.emit("inform", data={"type": "event"}, namespace="/ravop")
 
 
 def make_request(endpoint, method, payload={}, headers=None):
-    headers = {"token" : g.ravenverse_token}
+    headers = {"token": g.ravenverse_token}
     if method == "post":
         return requests.post(
-            "{}{}".format(RAVSOCK_SERVER_URL, endpoint), json=payload, headers=headers
+            "{}/{}".format(RAVENVERSE_URL, endpoint), json=payload, headers=headers
         )
     elif method == "get":
         return requests.get(
-            "{}{}".format(RAVSOCK_SERVER_URL, endpoint), headers=headers
+            "{}/{}".format(RAVENVERSE_URL, endpoint), headers=headers
         )
 
 
@@ -81,6 +82,7 @@ def convert_to_ndarray(x):
 
 def convert_ndarray_to_str(x):
     return str(x.tolist())
+
 
 def dump_data(data_id, value):
     """

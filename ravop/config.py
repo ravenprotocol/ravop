@@ -13,10 +13,10 @@ os.makedirs(BASE_DIR, exist_ok=True)
 os.makedirs(DATA_FILES_PATH, exist_ok=True)
 os.makedirs(TEMP_FILES_PATH, exist_ok=True)
 
-RAVSOCK_SERVER_URL = os.environ.get("RAVSOCK_SERVER_URL", "http://0.0.0.0:9999/")
+RAVENVERSE_URL = os.environ.get("RAVENVERSE_URL")
 
 LOCAL_COMPUTE = False
 
-FTP_SERVER_URL = "0.0.0.0"
+RAVENVERSE_FTP_HOST = os.environ.get("RAVENVERSE_FTP_HOST")
 
-FTP_BLOCKSIZE = 8192 * 10 #bytes
+FTP_BLOCKSIZE = 8192 * 10  # bytes
