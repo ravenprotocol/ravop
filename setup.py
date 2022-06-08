@@ -20,7 +20,8 @@ setup(
         "numpy==1.21.5",
         "python-socketio==5.4.1",
         "python-engineio==4.2.1",
-        "requests"
-        "python-dotenv"
+        "requests==2.27.1"
+        "python-dotenv==0.20.0",
+        "speedtest-cli==2.1.3"
     ]
 )
