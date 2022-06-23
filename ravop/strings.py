@@ -53,6 +53,9 @@ class Operators(object):
     FIND_INDICES = "find_indices"
     SHAPE = "shape"
     PAD = "pad"
+    ARANGE = "arange"
+    REPEAT = "repeat"
+    INDEX = "index"
 
     # Comparison Operators
     GREATER = "greater"
@@ -87,6 +90,12 @@ class Operators(object):
     PROD = "prod"
     FLATTEN = "flatten"
     RAVEL = "ravel"
+    JOIN_TO_LIST = "join_to_list"
+    ZEROS = "zeros"
+    RAVINT = "ravint"
+    CNN_INDEX = "cnn_index"
+    CNN_INDEX_2 = "cnn_index_2"
+    CNN_ADD_AT = "cnn_add_at"
 
     # Data Preprocessing
     ONE_HOT_ENCODING = "one_hot_encoding"
@@ -173,7 +182,15 @@ functions = {'lin': Operators.LINEAR,
              'flatten': Operators.FLATTEN,
              'ravel': Operators.RAVEL,
              'pad': Operators.PAD,
-
+             'arange': Operators.ARANGE,
+             'repeat':Operators.REPEAT,
+             'index': Operators.INDEX,
+             'join_to_list': Operators.JOIN_TO_LIST,
+             'zeros': Operators.ZEROS,
+             'ravint': Operators.RAVINT,
+             'cnn_index': Operators.CNN_INDEX,
+             'cnn_index_2': Operators.CNN_INDEX_2,
+             'cnn_add_at': Operators.CNN_ADD_AT,
              # Federated functions
 
              'federated_mean': Operators.FEDERATED_MEAN,

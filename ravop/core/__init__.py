@@ -57,6 +57,104 @@ def initialize(ravenverse_token):  # , username):
     ftp_username = username
     ftp_password = password
 
+    g.is_initialized = True
+    print("\nInitialized Successfully!\n")
+    
+    current_graph_id = make_request("ravop/developer/get_current_graph_id/", "get").json()
+    if 'graph_id' in current_graph_id.keys():
+        g.graph_id = current_graph_id['graph_id']
+        print("Your Current Graph ID: ", g.graph_id)
+    else:
+        print("No Currently Active Graph! ")
+        
+    g.is_activated = make_request(f"graph/is_activated/", "get").json()['message']
+    if g.is_activated == "True":
+        g.is_activated = True
+    else:
+        g.is_activated = False
+
+def fetch_persisting_op(op_name):
+    """
+    Fetch the persisting op from the server
+    """
+    if op_name is not None:
+        op_endpoint = f"op/fetch_persisting/?name={op_name}"
+        res = make_request(op_endpoint, "get")
+        if res.status_code == 400:
+            print("Error: ", res['Error'])
+            os._exit(1)
+        res = res.json()    
+        return res['value']
+    else:
+        print("Error: Operator Name not Provided")
+        return "Error: Operator Name not Provided"
+
+def execute():
+    """Execute the graph"""
+    execute_endpoint = f"graph/execute/"
+    res = make_request(execute_endpoint, "get")
+    print('\n')
+    print(res.json()['message'])
+    if res.status_code == 400:
+        print("Error: ", res.json()['message'])
+        os._exit(1)
+    print('\n')
+    return res.json()['message']
+
+def track_progress():
+    """
+    Track the progress of the graph
+    """
+    from alive_progress import alive_bar
+            
+    progress_endpoint = f"graph/progress/"
+    progress = 0
+    with alive_bar(100, manual=True, ctrl_c=True, title='Progress', spinner='waves2') as bar:
+        while True:
+            res = make_request(progress_endpoint, "get")
+            res = res.json()
+            if message in res == 400:
+                print("Error: ", res['message'])
+                os._exit(1)
+            progress = int(res['progress'])
+            bar(progress/100)
+            if progress == 100:
+                break
+            time.sleep(0.5)
+            
+    print('\nGraph Computed Successfully!')
+
+def activate():
+    """Activate the graph"""
+    activate_endpoint = f"graph/activate/"
+    res = make_request(activate_endpoint, "get")
+    print('\n')
+    print(res.json()['message'])
+    if res.status_code == 200:
+        g.is_activated = True
+    else:
+        print("Error: ", res.json()['message'])
+        os._exit(1)
+    return res.json()['message']
+
+def flush():
+    """
+    Flush the graph and delete persisting ops
+    """
+    flush_endpoint = f"ravop/developer/flush/"
+    res = make_request(flush_endpoint, "get")
+    print('\n')
+    print(res.json()['message'])
+    if res.status_code == 200:
+        g.is_activated = False
+        g.graph_id = None
+
+    if res.status_code == 400:
+        print("Error: ", res.json()['message'])
+        os._exit(1)
+    print('\n')
+    return res.json()['message']
+
 
 def t(value, dtype="ndarray", **kwargs):
     """
@@ -147,7 +245,7 @@ def __create_math_op(*args, **kwargs):
     op = make_request("op/create/", "post", {
         "name": kwargs.get("name", None),
         "graph_id": g.graph_id,
-        "subgraph_id": g.sub_graph_id,
+        "subgraph_id": 0, #g.sub_graph_id,
         "node_type": node_type,
         "inputs": op_ids,
         "outputs": None,
@@ -167,13 +265,25 @@ def __create_math_op(*args, **kwargs):
 
 class ParentClass(object):
     def __init__(self, id=None, **kwargs):
-        self._error = None
-        self._status_code = None
+        if g.is_initialized:
+            if not g.is_activated:
+                if g.graph_id is not None:
+                    self._error = None
+                    self._status_code = None
 
-        if id is not None:
-            self.__get(endpoint=self.get_endpoint)
+                    if id is not None:
+                        self.__get(endpoint=self.get_endpoint)
+                    else:
+                        self.__create(self.create_endpoint, **kwargs)
+                else:
+                    print("Error: R.Graph() not Created")
+                    os._exit(1)
+            else:
+                print("Error: R.Graph() already Activated")
+                os._exit(1)
         else:
-            self.__create(self.create_endpoint, **kwargs)
+            print("Error: Ravop is not initialized")
+            os._exit(1)
 
     def fetch_update(self):
         self.__get(self.get_endpoint)
@@ -241,7 +351,7 @@ class Op(ParentClass):
             if (inputs is not None or outputs is not None) and operator is not None:
                 info = self.extract_info(**kwargs)
                 info['graph_id'] = g.graph_id
-                info['subgraph_id'] = g.sub_graph_id
+                info['subgraph_id'] = 0 #g.sub_graph_id
                 info['params'] = json.dumps(kwargs)
                 info["name"] = kwargs.get("name", None)
 
@@ -268,6 +378,17 @@ class Op(ParentClass):
 
     def get_status(self):
         return make_request(f"op/status/?id={self.id}", "get").json()['op_status']
+
+    def persist_op(self, name=None):
+        """Persist the Op"""
+        if name is None:
+            raise Exception("Enter a name for persisting Op")
+
+        persist_endpoint = f"op/persist/?id={self.id}&name={name}"
+        res = make_request(persist_endpoint, "get")
+        print('\n')
+        print(res.json()['message'])
+        return res.json()['message']
 
     def extract_info(self, **kwargs):
         inputs = kwargs.get("inputs", None)
@@ -337,12 +458,16 @@ class Op(ParentClass):
             )
         )
 
-    def __call__(self, *args, **kwargs):
-        self.wait_till_computed()
-        self.fetch_update()
-        temp = make_request(f"global/subgraph/update/id/?graph_id={g.graph_id}", "get").json()['global_subgraph_id']
-        g.sub_graph_id = temp + 1
-        return self.get_output()
+    # def __call__(self, *args, **kwargs):
+    #     global compile
+    #     if not compile:
+    #         self.wait_till_computed()
+    #         self.fetch_update()
+    #         temp = make_request(f"global/subgraph/update/id/?graph_id={g.graph_id}", "get").json()['global_subgraph_id']
+    #         g.sub_graph_id = temp + 1
+    #         return self.get_output()
+    #     else:
+    #         return "In compile mode"
 
     def __add__(self, other):
         return add(self, other)
@@ -584,28 +709,27 @@ class Graph(ParentClass):
     """A class to represent a graph object"""
 
     def __init__(self, id=None, **kwargs):
+        if g.is_initialized:
+            self.get_graph_id_endpoint = f"graph/get/graph_id"
+            res = make_request(self.get_graph_id_endpoint, "get")
+            g.graph_id = res.json()["graph_id"]
+            if id is None:
+                id = g.graph_id + 1
+                self.my_id = id - 1
+                g.sub_graph_id = 1
+            else:
+                self.my_id = id
 
-        self.get_graph_id_endpoint = f"graph/get/graph_id"
-        res = make_request(self.get_graph_id_endpoint, "get")
-        g.graph_id = res.json()["graph_id"]
-        if id is None:
-            id = g.graph_id + 1
-            self.my_id = id - 1
-            g.sub_graph_id = 1
+            self.get_endpoint = f"graph/get/?id={id}"
+            self.create_endpoint = f"graph/create/"
+
+            if id is not None and id <= g.graph_id:
+                super().__init__(id=id)
+            else:
+                super().__init__(**kwargs)
         else:
-            self.my_id = id
-
-        self.get_endpoint = f"graph/get/?id={id}"
-        self.create_endpoint = f"graph/create/"
-
-        if id is not None and id <= g.graph_id:
-            super().__init__(id=id)
-        else:
-            super().__init__(**kwargs)
-
-    # def add(self, op):
-    #     """Add an op to the graph"""
-    #     op.add_to_graph(self.id)
+            print("Error: Ravop is not initialized")
+            os._exit(1)
 
     @property
     def progress(self):
@@ -620,7 +744,7 @@ class Graph(ParentClass):
         print('\n')
         print(res.json()['message'])
         return res.json()['message']
-
+    
     def get_op_stats(self):
         """Get stats of all ops"""
         get_op_stats_endpoint = f"graph/op/get/stats/?id={self.my_id}"

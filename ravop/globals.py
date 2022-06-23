@@ -4,11 +4,13 @@ from .singleton_utils import Singleton
 @Singleton
 class Globals(object):
     def __init__(self):
-        self._default_graph_id = 1
+        self._default_graph_id = None
         self._default_sub_graph_id = 1
         self._eager_mode = False
         self._ftp_upload_blocksize = 8192
         self._ravenverse_token = None
+        self._is_initialized = False
+        self._is_activated = False
 
     @property
     def graph_id(self):
@@ -62,5 +64,20 @@ class Globals(object):
     def ravenverse_token(self, ravenverse_token):
         self._ravenverse_token = ravenverse_token
 
+    @property
+    def is_initialized(self):
+        return self._is_initialized
+
+    @is_initialized.setter
+    def is_initialized(self, is_initialized):
+        self._is_initialized = is_initialized
+
+    @property
+    def is_activated(self):
+        return self._is_activated
+
+    @is_activated.setter
+    def is_activated(self, is_activated):
+        self._is_activated = is_activated
 
 globals = Globals.Instance()

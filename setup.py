@@ -22,6 +22,7 @@ setup(
         "python-engineio==4.2.1",
         "requests==2.27.1"
         "python-dotenv==0.20.0",
-        "speedtest-cli==2.1.3"
+        "speedtest-cli==2.1.3",
+        "alive-progress==2.4.1"
     ]
 )
