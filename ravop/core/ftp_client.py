@@ -12,9 +12,9 @@ class FTPClient:
         self.ftp.login(user, passwd)
 
     def download(self, filename, path):
-        print('Downloading')
+        g.logger.debug('Downloading')
         self.ftp.retrbinary('RETR ' + path, open(filename, 'wb').write)
-        print("Downloaded")
+        g.logger.debug("Downloaded")
 
     def upload(self, filename, path):
         self.ftp.storbinary('STOR ' + path, open(filename, 'rb'), blocksize=g.ftp_upload_blocksize)
@@ -27,7 +27,7 @@ class FTPClient:
 
 
 def get_client(username, password):
-    print("FTP User credentials:", RAVENVERSE_FTP_HOST, username, password)
+    g.logger.debug("FTP User credentials:{} {} {}".format(RAVENVERSE_FTP_HOST, username, password))
     return FTPClient(host=RAVENVERSE_FTP_HOST, user=username, passwd=password)
 
 
@@ -36,5 +36,5 @@ def check_credentials(username, password):
         FTPClient(host=RAVENVERSE_FTP_HOST, user=username, passwd=password)
         return True
     except Exception as e:
-        print("Error:{}".format(str(e)))
+        g.logger.debug("Error:{}".format(str(e)))
         return False

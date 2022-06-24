@@ -1,3 +1,4 @@
+from .logger import get_logger
 from .singleton_utils import Singleton
 
 
@@ -11,6 +12,7 @@ class Globals(object):
         self._ravenverse_token = None
         self._is_initialized = False
         self._is_activated = False
+        self._logger = get_logger()
 
     @property
     def graph_id(self):
@@ -79,5 +81,6 @@ class Globals(object):
     @is_activated.setter
     def is_activated(self, is_activated):
         self._is_activated = is_activated
+
 
 globals = Globals.Instance()

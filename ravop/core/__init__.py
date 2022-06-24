@@ -20,15 +20,16 @@ ftp_password = None
 
 def initialize(ravenverse_token):  # , username):
     global ftp_client, ftp_username, ftp_password
-    print("Creating FTP developer credentials...")
+    g.logger.debug("Creating FTP developer credentials...")
     g.ravenverse_token = ravenverse_token
-    # print("ravenverse token set: ", g.ravenverse_token, ravenverse_token)
+    # g.logger.debug("ravenverse token set: ", g.ravenverse_token, ravenverse_token)
     create_endpoint = f"ravop/developer/add/"  # ?username={username}"
     res = make_request(create_endpoint, "get")
-    res = res.json()
 
-    if 'Error' in res.keys():
-        print("Error: ", res['Error'])
+    if res.status_code == 200:
+        res = res.json()
+    else:
+        g.logger.debug("Error:{}".format(res.text))
         os._exit(1)
 
     username = res['username']
@@ -51,27 +52,28 @@ def initialize(ravenverse_token):  # , username):
     else:
         g.ftp_upload_blocksize = 8192 * 1000
 
-    print("FTP Upload Blocksize: ", g.ftp_upload_blocksize)
+    g.logger.debug("FTP Upload Blocksize:{}".format(g.ftp_upload_blocksize))
 
     ftp_client = get_client(username=username, password=password)
     ftp_username = username
     ftp_password = password
 
     g.is_initialized = True
-    print("\nInitialized Successfully!\n")
-    
+    g.logger.debug("\nInitialized Successfully!\n")
+
     current_graph_id = make_request("ravop/developer/get_current_graph_id/", "get").json()
     if 'graph_id' in current_graph_id.keys():
         g.graph_id = current_graph_id['graph_id']
-        print("Your Current Graph ID: ", g.graph_id)
+        g.logger.debug("Your Current Graph ID:{}".format(g.graph_id))
     else:
-        print("No Currently Active Graph! ")
-        
+        g.logger.debug("No Currently Active Graph! ")
+
     g.is_activated = make_request(f"graph/is_activated/", "get").json()['message']
     if g.is_activated == "True":
         g.is_activated = True
     else:
         g.is_activated = False
+
 
 def fetch_persisting_op(op_name):
     """
@@ -80,62 +82,70 @@ def fetch_persisting_op(op_name):
     if op_name is not None:
         op_endpoint = f"op/fetch_persisting/?name={op_name}"
         res = make_request(op_endpoint, "get")
-        if res.status_code == 400:
-            print("Error: ", res['Error'])
+
+        if res.status_code in [400, 404, 500]:
+            g.logger.debug("Error:{}".format(res.text))
             os._exit(1)
-        res = res.json()    
+
+        res = res.json()
         return res['value']
     else:
-        print("Error: Operator Name not Provided")
+        g.logger.debug("Error: Operator Name not Provided")
         return "Error: Operator Name not Provided"
+
 
 def execute():
     """Execute the graph"""
     execute_endpoint = f"graph/execute/"
     res = make_request(execute_endpoint, "get")
-    print('\n')
-    print(res.json()['message'])
     if res.status_code == 400:
-        print("Error: ", res.json()['message'])
+        g.logger.debug("Error:{}".format(res.text))
         os._exit(1)
-    print('\n')
+
+    g.logger.debug(res.json()['message'])
+    g.logger.debug("")
     return res.json()['message']
+
 
 def track_progress():
     """
     Track the progress of the graph
     """
     from alive_progress import alive_bar
-            
+
     progress_endpoint = f"graph/progress/"
     progress = 0
     with alive_bar(100, manual=True, ctrl_c=True, title='Progress', spinner='waves2') as bar:
         while True:
             res = make_request(progress_endpoint, "get")
-            res = res.json()
-            if message in res == 400:
-                print("Error: ", res['message'])
+            if res.status_code == 200:
+                res = res.json()
+            else:
+                g.logger.debug("Error: ", res.text)
                 os._exit(1)
+
             progress = int(res['progress'])
-            bar(progress/100)
+            bar(progress / 100)
             if progress == 100:
                 break
             time.sleep(0.5)
-            
-    print('\nGraph Computed Successfully!')
+
+    g.logger.debug('\nGraph Computed Successfully!')
+
 
 def activate():
     """Activate the graph"""
     activate_endpoint = f"graph/activate/"
     res = make_request(activate_endpoint, "get")
-    print('\n')
-    print(res.json()['message'])
+    g.logger.debug('\n')
+    g.logger.debug(res.json()['message'])
     if res.status_code == 200:
         g.is_activated = True
     else:
-        print("Error: ", res.json()['message'])
+        g.logger.debug("Error: ", res.json()['message'])
         os._exit(1)
     return res.json()['message']
+
 
 def flush():
     """
@@ -143,16 +153,16 @@ def flush():
     """
     flush_endpoint = f"ravop/developer/flush/"
     res = make_request(flush_endpoint, "get")
-    print('\n')
-    print(res.json()['message'])
     if res.status_code == 200:
         g.is_activated = False
         g.graph_id = None
 
     if res.status_code == 400:
-        print("Error: ", res.json()['message'])
+        g.logger.debug("Error:{}".format(res.text))
         os._exit(1)
-    print('\n')
+
+    g.logger.debug("")
+    g.logger.debug(res.json())
     return res.json()['message']
 
 
@@ -245,7 +255,7 @@ def __create_math_op(*args, **kwargs):
     op = make_request("op/create/", "post", {
         "name": kwargs.get("name", None),
         "graph_id": g.graph_id,
-        "subgraph_id": 0, #g.sub_graph_id,
+        "subgraph_id": 0,  # g.sub_graph_id,
         "node_type": node_type,
         "inputs": op_ids,
         "outputs": None,
@@ -276,22 +286,22 @@ class ParentClass(object):
                     else:
                         self.__create(self.create_endpoint, **kwargs)
                 else:
-                    print("Error: R.Graph() not Created")
+                    g.logger.debug("Error: R.Graph() not Created")
                     os._exit(1)
             else:
-                print("Error: R.Graph() already Activated")
+                g.logger.debug("Error: R.Graph() already Activated")
                 os._exit(1)
         else:
-            print("Error: Ravop is not initialized")
+            g.logger.debug("Error: Ravop is not initialized")
             os._exit(1)
 
     def fetch_update(self):
         self.__get(self.get_endpoint)
 
     def __get(self, endpoint):
-        # print('ENDPOINT: ',endpoint)
+        # g.logger.debug('ENDPOINT: ',endpoint)
         res = make_request(endpoint, "get")
-        # print("Response:GET:", res.json())
+        # g.logger.debug("Response:GET:", res.json())
         status_code = res.status_code
         res = res.json()
         if status_code == 200:
@@ -304,7 +314,7 @@ class ParentClass(object):
 
     def __create(self, endpoint, **kwargs):
         res = make_request(endpoint, "post", payload={**kwargs})
-        # print("Response:POST:", res.text, kwargs)
+        # g.logger.debug("Response:POST:", res.text, kwargs)
         status_code = res.status_code
         res = res.json()
         if status_code == 200:
@@ -351,22 +361,22 @@ class Op(ParentClass):
             if (inputs is not None or outputs is not None) and operator is not None:
                 info = self.extract_info(**kwargs)
                 info['graph_id'] = g.graph_id
-                info['subgraph_id'] = 0 #g.sub_graph_id
+                info['subgraph_id'] = 0  # g.sub_graph_id
                 info['params'] = json.dumps(kwargs)
                 info["name"] = kwargs.get("name", None)
 
                 super().__init__(id, **info)
 
     def wait_till_computed(self):
-        print('Waiting for Op id: ', self.id)
+        g.logger.debug('Waiting for Op id:{}'.format(self.id))
         while self.get_status() != 'computed':
             if self.fetch_retries() == "failed":
                 end_endpoint = f"graph/end/?id={g.graph_id}"
                 res = make_request(end_endpoint, "get")
-                print("\n------------------------------")
-                print(res.json()['message'])
+                g.logger.debug("------------------------------")
+                g.logger.debug(res.json()['message'])
                 self.fetch_update()
-                print("Error: ", self.message)
+                g.logger.debug("Error:{}".format(self.message))
                 sys.exit()
             time.sleep(0.1)
         sys.stdout.write("\033[F")  # back to previous line
@@ -386,8 +396,8 @@ class Op(ParentClass):
 
         persist_endpoint = f"op/persist/?id={self.id}&name={name}"
         res = make_request(persist_endpoint, "get")
-        print('\n')
-        print(res.json()['message'])
+        g.logger.debug("")
+        g.logger.debug(res.json())
         return res.json()['message']
 
     def extract_info(self, **kwargs):
@@ -671,15 +681,15 @@ class Data(ParentClass):
                     kwargs['username'] = ftp_username
 
         super().__init__(id, **kwargs)
-        # print("Username and password: ", ftp_username, ftp_password)
-        # print("Check ftp creds: ",check_credentials(ftp_username,ftp_password))
+        # g.logger.debug("Username and password: ", ftp_username, ftp_password)
+        # g.logger.debug("Check ftp creds: ",check_credentials(ftp_username,ftp_password))
 
         if id is None:
             if value is not None and byte_size > 0 * 1000000:
                 # value = convert_to_ndarray(value)
                 file_path = dump_data(self.id, value)
                 ftp_client.upload(file_path, os.path.basename(file_path))
-                # print("\nFile uploaded!", file_path)
+                # g.logger.debug("\nFile uploaded!", file_path)
                 os.remove(file_path)
 
     def __call__(self, *args, **kwargs):
@@ -728,7 +738,7 @@ class Graph(ParentClass):
             else:
                 super().__init__(**kwargs)
         else:
-            print("Error: Ravop is not initialized")
+            g.logger.debug("Error: Ravop is not initialized")
             os._exit(1)
 
     @property
@@ -741,10 +751,10 @@ class Graph(ParentClass):
         """End the graph"""
         end_endpoint = f"graph/end/?id={self.my_id}"
         res = make_request(end_endpoint, "get")
-        print('\n')
-        print(res.json()['message'])
+        g.logger.debug('\n')
+        g.logger.debug(res.json())
         return res.json()['message']
-    
+
     def get_op_stats(self):
         """Get stats of all ops"""
         get_op_stats_endpoint = f"graph/op/get/stats/?id={self.my_id}"
