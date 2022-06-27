@@ -82,5 +82,12 @@ class Globals(object):
     def is_activated(self, is_activated):
         self._is_activated = is_activated
 
+    @property
+    def logger(self):
+        return self._logger
+
+    @logger.setter
+    def logger(self, logger):
+        self._logger = logger
 
 globals = Globals.Instance()
