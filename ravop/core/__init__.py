@@ -139,6 +139,7 @@ def activate():
     res = make_request(activate_endpoint, "get")
     g.logger.debug('\n')
     g.logger.debug(res.json()['message'])
+    g.logger.debug('Cost: {} RAVEN TOKENS'.format(res.json()['cost']))
     if res.status_code == 200:
         g.is_activated = True
     else:
