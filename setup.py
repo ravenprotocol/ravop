@@ -7,15 +7,15 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='ravop',
-    version='0.4.3',
+    version='0.4.4',
     license='MIT',
     author="Raven Protocol",
     author_email='kailash@ravenprotocol.com',
     packages=find_packages(),
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/ravenprotocol/ravftp',
-    keywords='Ravop, requestor client library',
+    url='https://github.com/ravenprotocol/ravop',
+    keywords='Ravop, requester library',
     install_requires=[
         "numpy==1.21.5",
         "python-socketio==5.4.1",
