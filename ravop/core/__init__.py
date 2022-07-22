@@ -17,10 +17,17 @@ ftp_client = None
 ftp_username = None
 ftp_password = None
 
+op_chunks = []
+chunk_threshold = 1000
+chunk_id = 0
+global_table_ids = {}
+
+persist_ops_queue = []
+
 
 def initialize(ravenverse_token):  # , username):
     global ftp_client, ftp_username, ftp_password
-    g.logger.debug("Creating FTP Requester credentials...")
+    g.logger.debug("Creating FTP developer credentials...")
     g.ravenverse_token = ravenverse_token
     # g.logger.debug("ravenverse token set: ", g.ravenverse_token, ravenverse_token)
     create_endpoint = f"ravop/developer/add/"  # ?username={username}"
@@ -135,6 +142,28 @@ def track_progress():
 
 def activate():
     """Activate the graph"""
+    global persist_ops_queue, op_chunks, global_table_ids
+
+    if len(op_chunks) > 0:        
+        res = make_request("op_chunk/create/", "post", op_chunks) 
+        chunk_to_table_mapping = res.json()
+        global_table_ids = {**global_table_ids, **chunk_to_table_mapping}
+        op_chunks = []
+
+    for i in range(len(persist_ops_queue)):
+        updated_persist_op = persist_ops_queue[i]
+        updated_persist_op['id'] = global_table_ids[str(updated_persist_op['id'])]
+        persist_ops_queue[i] = updated_persist_op
+        
+    persist_endpoint = f"op/persist/"
+    res = make_request(persist_endpoint, "post", payload=persist_ops_queue)
+    if res.status_code == 200:
+        g.logger.debug(res.json())
+        persist_ops_queue = []
+    else:
+        g.logger.debug("Error:{}".format(res.text))
+        os._exit(1)
+
     activate_endpoint = f"graph/activate/"
     res = make_request(activate_endpoint, "get")
     g.logger.debug('\n')
@@ -207,6 +236,7 @@ def pi():
 
 
 def __create_math_op(*args, **kwargs):
+    global chunk_id, op_chunks, chunk_threshold, global_table_ids
     params = dict()
     for key, value in kwargs.items():
         if key in ["node_type", "op_type", "status", "name", "operator"]:
@@ -219,9 +249,21 @@ def __create_math_op(*args, **kwargs):
         ):
             params[key] = value.id
         elif type(value).__name__ in ["int", "float"]:
-            params[key] = Scalar(value).id
+            relative_param_id = Scalar(value).id
+            global_param_id = global_table_ids.get(str(relative_param_id), None)
+            if global_param_id is not None:
+                params[key] = global_param_id
+            else:
+                params[key] = relative_param_id
+
         elif isinstance(value, list) or isinstance(value, tuple):
-            params[key] = Tensor(value).id
+            relative_param_id = Tensor(value).id
+            global_param_id = global_table_ids.get(str(relative_param_id), None)
+            if global_param_id is not None:
+                params[key] = global_param_id
+            else:
+                params[key] = relative_param_id
+
         elif type(value).__name__ == "str":
             params[key] = value
         elif isinstance(value, bool):
@@ -234,7 +276,13 @@ def __create_math_op(*args, **kwargs):
     else:
         op_ids = []
         for op in args:
-            op_ids.append(op.id)
+            relative_op_id = op.id
+            global_op_id = global_table_ids.get(str(relative_op_id), None)
+            if global_op_id is not None:
+                input_op_id = global_op_id
+            else:
+                input_op_id = relative_op_id
+            op_ids.append(input_op_id)
 
         if len(op_ids) == 1:
             op_type = OpTypes.UNARY
@@ -253,7 +301,7 @@ def __create_math_op(*args, **kwargs):
     operator = kwargs.get("operator", None)
     complexity = kwargs.get("complexity", None)
 
-    op = make_request("op/create/", "post", {
+    op_payload = {
         "name": kwargs.get("name", None),
         "graph_id": g.graph_id,
         "subgraph_id": 0,  # g.sub_graph_id,
@@ -265,10 +313,20 @@ def __create_math_op(*args, **kwargs):
         "status": status,
         "complexity": complexity,
         "params": json.dumps(params),
-    })
+    }
 
-    op = op.json()
-    op = Op(id=op["id"])
+    chunk_id += 1
+    op_id = chunk_id
+    op_payload["id"] = op_id
+    op_chunks.append(op_payload)
+    if op_id % chunk_threshold == 0:
+        res = make_request("op_chunk/create/", "post", op_chunks)
+        chunk_to_table_mapping = res.json()
+        global_table_ids = {**global_table_ids, **chunk_to_table_mapping}
+        op_chunks = []
+    
+    # op = op.json()
+    op = Op(id=op_id)#op["id"])
     if g.eager_mode:
         op.wait_till_computed()
     return op
@@ -283,7 +341,8 @@ class ParentClass(object):
                     self._status_code = None
 
                     if id is not None:
-                        self.__get(endpoint=self.get_endpoint)
+                        # self.__get(endpoint=self.get_endpoint)
+                        self.id = id
                     else:
                         self.__create(self.create_endpoint, **kwargs)
                 else:
@@ -348,6 +407,7 @@ class ParentClass(object):
 
 class Op(ParentClass):
     def __init__(self, id=None, **kwargs):
+        global chunk_id, op_chunks, chunk_threshold, global_table_ids
         self.get_endpoint = f"op/get/?id={id}"
         self.create_endpoint = f"op/create/"
 
@@ -365,8 +425,18 @@ class Op(ParentClass):
                 info['subgraph_id'] = 0  # g.sub_graph_id
                 info['params'] = json.dumps(kwargs)
                 info["name"] = kwargs.get("name", None)
+                chunk_id += 1
+                info['id'] = chunk_id
+                for k, v in info.items():
+                    self.__dict__[k] = v
 
-                super().__init__(id, **info)
+                op_chunks.append(info)
+                if info['id'] % chunk_threshold == 0:
+                    res = make_request("op_chunk/create/", "post", op_chunks) 
+                    chunk_to_table_mapping = res.json()
+                    global_table_ids = {**global_table_ids, **chunk_to_table_mapping}
+                    op_chunks = []
+                # super().__init__(id, **info)
 
     def wait_till_computed(self):
         g.logger.debug('Waiting for Op id:{}'.format(self.id))
@@ -395,11 +465,11 @@ class Op(ParentClass):
         if name is None:
             raise Exception("Enter a name for persisting Op")
 
-        persist_endpoint = f"op/persist/?id={self.id}&name={name}"
-        res = make_request(persist_endpoint, "get")
+        global global_table_ids, op_chunks, chunk_id, chunk_threshold, persist_ops_queue
+
         g.logger.debug("")
-        g.logger.debug(res.json())
-        return res.json()['message']
+        g.logger.debug("Persisting Op: {}".format(name))
+        persist_ops_queue.append({'id':self.id, 'name':name})
 
     def extract_info(self, **kwargs):
         inputs = kwargs.get("inputs", None)
