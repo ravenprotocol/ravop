@@ -239,30 +239,44 @@ def __create_math_op(*args, **kwargs):
     global chunk_id, op_chunks, chunk_threshold, global_table_ids
     params = dict()
     for key, value in kwargs.items():
+        metadata = {}
         if key in ["node_type", "op_type", "status", "name", "operator"]:
             continue
-        if (
-                isinstance(value, Op)
-                or isinstance(value, Data)
-                or isinstance(value, Scalar)
-                or isinstance(value, Tensor)
-        ):
-            params[key] = value.id
+        if (isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor)):
+            relative_param_id = value.id
+            global_param_id = global_table_ids.get(str(relative_param_id), None)
+            if global_param_id is not None:
+                metadata['global_flag'] = "True"
+                metadata['id'] = global_param_id
+                params[key] = metadata
+            else:
+                metadata['global_flag'] = "False"
+                metadata['id'] = relative_param_id
+                params[key] = metadata
+
         elif type(value).__name__ in ["int", "float"]:
             relative_param_id = Scalar(value).id
             global_param_id = global_table_ids.get(str(relative_param_id), None)
             if global_param_id is not None:
-                params[key] = global_param_id
+                metadata['global_flag'] = "True"
+                metadata['id'] = global_param_id
+                params[key] = metadata
             else:
-                params[key] = relative_param_id
+                metadata['global_flag'] = "False"
+                metadata['id'] = relative_param_id
+                params[key] = metadata
 
         elif isinstance(value, list) or isinstance(value, tuple):
             relative_param_id = Tensor(value).id
             global_param_id = global_table_ids.get(str(relative_param_id), None)
             if global_param_id is not None:
-                params[key] = global_param_id
+                metadata['global_flag'] = "True"
+                metadata['id'] = global_param_id
+                params[key] = metadata
             else:
-                params[key] = relative_param_id
+                metadata['global_flag'] = "False"
+                metadata['id'] = relative_param_id
+                params[key] = metadata
 
         elif type(value).__name__ == "str":
             params[key] = value
@@ -278,11 +292,16 @@ def __create_math_op(*args, **kwargs):
         for op in args:
             relative_op_id = op.id
             global_op_id = global_table_ids.get(str(relative_op_id), None)
+            metadata = {}
             if global_op_id is not None:
-                input_op_id = global_op_id
+                metadata['global_flag'] = "True"
+                metadata['id'] = global_op_id
+                input_op_data = metadata
             else:
-                input_op_id = relative_op_id
-            op_ids.append(input_op_id)
+                metadata['global_flag'] = "False"
+                metadata['id'] = relative_op_id
+                input_op_data = metadata
+            op_ids.append(input_op_data)
 
         if len(op_ids) == 1:
             op_type = OpTypes.UNARY
@@ -320,11 +339,13 @@ def __create_math_op(*args, **kwargs):
     op_payload["id"] = op_id
     op_chunks.append(op_payload)
     if op_id % chunk_threshold == 0:
+        # print("\nChunking...")
         res = make_request("op_chunk/create/", "post", op_chunks)
         chunk_to_table_mapping = res.json()
         global_table_ids = {**global_table_ids, **chunk_to_table_mapping}
         op_chunks = []
     
+
     # op = op.json()
     op = Op(id=op_id)#op["id"])
     if g.eager_mode:
