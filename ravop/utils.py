@@ -60,8 +60,6 @@ def inform():
 
 
 def make_request(endpoint, method, payload={}, headers=None):
-    g.logger.debug("Request url:{}".format(RAVENVERSE_URL))
-
     headers = {"token": g.ravenverse_token}
     if method == "post":
         return requests.post(
