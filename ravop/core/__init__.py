@@ -26,6 +26,8 @@ persist_ops_queue = []
 
 
 def initialize(ravenverse_token):  # , username):
+    g.logger.debug("Initializing...")
+
     global ftp_client, ftp_username, ftp_password
     g.logger.debug("Creating FTP developer credentials...")
     g.ravenverse_token = ravenverse_token
