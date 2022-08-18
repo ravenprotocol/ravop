@@ -98,6 +98,7 @@ class Operators(object):
     CNN_INDEX_2 = "cnn_index_2"
     CNN_ADD_AT = "cnn_add_at"
     SIZE = "size"
+    SQUEEZE = "squeeze"
 
     # Data Preprocessing
     ONE_HOT_ENCODING = "one_hot_encoding"
@@ -195,6 +196,7 @@ functions = {'lin': Operators.LINEAR,
              'cnn_index_2': Operators.CNN_INDEX_2,
              'cnn_add_at': Operators.CNN_ADD_AT,
              'size': Operators.SIZE,
+             'squeeze': Operators.SQUEEZE,
              # Federated functions
 
              'federated_mean': Operators.FEDERATED_MEAN,
