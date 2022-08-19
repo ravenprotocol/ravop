@@ -6,6 +6,7 @@ from functools import wraps
 
 import numpy as np
 import speedtest
+import pickle as pkl
 
 from .ftp_client import get_client, check_credentials
 from ..config import RAVENVERSE_FTP_HOST
@@ -45,22 +46,25 @@ def initialize(ravenverse_token):  # , username):
     password = res['password']
     time.sleep(2)
 
-    if RAVENVERSE_FTP_HOST != "localhost" and RAVENVERSE_FTP_HOST != "0.0.0.0":
-        wifi = speedtest.Speedtest()
-        upload_speed = int(wifi.upload())
-        upload_speed = upload_speed / 8
-        if upload_speed <= 3000000:
-            upload_multiplier = 1
-        elif upload_speed < 80000000:
-            upload_multiplier = int((upload_speed / 80000000) * 1000)
+    try:
+        if RAVENVERSE_FTP_HOST != "localhost" and RAVENVERSE_FTP_HOST != "0.0.0.0":
+            wifi = speedtest.Speedtest()
+            upload_speed = int(wifi.upload())
+            upload_speed = upload_speed / 8
+            if upload_speed <= 3000000:
+                upload_multiplier = 1
+            elif upload_speed < 80000000:
+                upload_multiplier = int((upload_speed / 80000000) * 1000)
+            else:
+                upload_multiplier = 1000
+
+            g.ftp_upload_blocksize = 8192 * upload_multiplier
+
         else:
-            upload_multiplier = 1000
-
-        g.ftp_upload_blocksize = 8192 * upload_multiplier
-
-    else:
+            g.ftp_upload_blocksize = 8192 * 1000
+    except Exception as e:
         g.ftp_upload_blocksize = 8192 * 1000
-
+        
     g.logger.debug("FTP Upload Blocksize:{}".format(g.ftp_upload_blocksize))
 
     ftp_client = get_client(username=username, password=password)
@@ -88,6 +92,7 @@ def fetch_persisting_op(op_name):
     """
     Fetch the persisting op from the server
     """
+    global ftp_client
     if op_name is not None:
         op_endpoint = f"op/fetch_persisting/?name={op_name}"
         res = make_request(op_endpoint, "get")
@@ -97,7 +102,18 @@ def fetch_persisting_op(op_name):
             os._exit(1)
 
         res = res.json()
-        return res['value']
+        file_name = res['file_name']
+
+        # create folder if not exists
+        if not os.path.exists("persisting_ops"):
+            os.makedirs("persisting_ops")
+
+        local_file_path = 'persisting_ops/{}.pkl'.format(op_name)
+        ftp_client.download(local_file_path, file_name)
+        with open(local_file_path, 'rb') as f:
+            value = pkl.load(f)
+        return value
+        # return res['value']
     else:
         g.logger.debug("Error: Operator Name not Provided")
         return "Error: Operator Name not Provided"
