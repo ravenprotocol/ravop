@@ -12,9 +12,7 @@ class FTPClient:
         self.ftp.login(user, passwd)
 
     def download(self, filename, path):
-        g.logger.debug('Downloading')
         self.ftp.retrbinary('RETR ' + path, open(filename, 'wb').write)
-        g.logger.debug("Downloaded")
 
     def upload(self, filename, path):
         self.ftp.storbinary('STOR ' + path, open(filename, 'rb'), blocksize=g.ftp_upload_blocksize)
