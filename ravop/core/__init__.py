@@ -48,18 +48,22 @@ def initialize(ravenverse_token):  # , username):
 
     try:
         if RAVENVERSE_FTP_HOST != "localhost" and RAVENVERSE_FTP_HOST != "0.0.0.0":
-            wifi = speedtest.Speedtest()
-            upload_speed = int(wifi.upload())
-            upload_speed = upload_speed / 8
-            if upload_speed <= 3000000:
-                upload_multiplier = 1
-            elif upload_speed < 80000000:
-                upload_multiplier = int((upload_speed / 80000000) * 1000)
-            else:
-                upload_multiplier = 1000
+            # wifi = speedtest.Speedtest()
+            # wifi.get_servers([])
+            # wifi.get_best_server()
+            # upload_speed = int(wifi.upload())
+            # upload_speed = upload_speed / 8
+            # if upload_speed <= 3000000:
+            #     upload_multiplier = 1
+            # elif upload_speed < 80000000:
+            #     upload_multiplier = int((upload_speed / 80000000) * 1000)
+            # else:
+            #     upload_multiplier = 1000
+
+            # Speedtest to calculate upload multiplier
+            upload_multiplier = test_speed()
 
             g.ftp_upload_blocksize = 8192 * upload_multiplier
-
         else:
             g.ftp_upload_blocksize = 8192 * 1000
     except Exception as e:
@@ -86,6 +90,26 @@ def initialize(ravenverse_token):  # , username):
         g.is_activated = True
     else:
         g.is_activated = False
+
+
+def test_speed():
+    try:
+        wifi = speedtest.Speedtest()
+        wifi.get_servers([])
+        wifi.get_best_server()
+        upload_speed = int(wifi.upload())
+        upload_speed = upload_speed / 8
+        if upload_speed <= 3000000:
+            upload_multiplier = 1
+        elif upload_speed < 80000000:
+            upload_multiplier = int((upload_speed / 80000000) * 1000)
+        else:
+            upload_multiplier = 1000
+    except Exception as e:
+        g.logger.debug("Error in speedtest:{}".format(str(e)))
+        upload_multiplier = 1
+
+    return upload_multiplier
 
 
 def fetch_persisting_op(op_name):
