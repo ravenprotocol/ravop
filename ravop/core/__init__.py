@@ -102,6 +102,10 @@ def fetch_persisting_op(op_name):
             os._exit(1)
 
         res = res.json()
+        if "message" in res.keys():
+            print(res['message'])
+            sys.exit(1)
+            
         file_name = res['file_name']
 
         # create folder if not exists
@@ -356,7 +360,7 @@ def __create_math_op(*args, **kwargs):
     op_id = chunk_id
     op_payload["id"] = op_id
     op_chunks.append(op_payload)
-    if len(op_chunks) >= chunk_threshold:
+    if len(op_chunks) >= chunk_threshold:# op_id % chunk_threshold == 0:
         # print("\nChunking...")
         res = make_request("op_chunk/create/", "post", op_chunks)
         chunk_to_table_mapping = res.json()
