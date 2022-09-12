@@ -8,6 +8,8 @@ import numpy as np
 import speedtest
 import pickle as pkl
 
+from terminaltables import AsciiTable
+
 from .ftp_client import get_client, check_credentials
 from ..config import RAVENVERSE_FTP_HOST
 from ..globals import globals as g
@@ -198,6 +200,24 @@ def activate():
         os._exit(1)
     return res.json()['message']
 
+def get_my_graphs():
+    # Get graphs
+    headers = {"token": os.environ.get("TOKEN")}
+    my_graphs_endpoint = f"graph/all/"
+    r = make_request(my_graphs_endpoint, "get")
+
+    if r.status_code != 200:
+        print("Error:{}".format(r.text))
+        return None
+
+    graphs = r.json()
+    table_data = [["Id", "Name", "Approach", "Algorithm", "Rules", "Status", "Cost"]]
+    for graph in graphs:
+        table_data.append([graph['id'], graph['name'], graph['approach'], graph['algorithm'], graph['rules'],
+                           graph['status'], str(graph['cost'])+" Tokens"])
+    print("Graphs:\n", AsciiTable(table_data).table)
+
+    return graphs
 
 def flush():
     """
