@@ -356,7 +356,7 @@ def __create_math_op(*args, **kwargs):
     op_id = chunk_id
     op_payload["id"] = op_id
     op_chunks.append(op_payload)
-    if op_id % chunk_threshold == 0:
+    if len(op_chunks) >= chunk_threshold:
         # print("\nChunking...")
         res = make_request("op_chunk/create/", "post", op_chunks)
         chunk_to_table_mapping = res.json()
@@ -470,12 +470,6 @@ class Op(ParentClass):
                     self.__dict__[k] = v
 
                 op_chunks.append(info)
-                if info['id'] % chunk_threshold == 0:
-                    res = make_request("op_chunk/create/", "post", op_chunks) 
-                    chunk_to_table_mapping = res.json()
-                    global_table_ids = {**global_table_ids, **chunk_to_table_mapping}
-                    op_chunks = []
-                # super().__init__(id, **info)
 
     def wait_till_computed(self):
         g.logger.debug('Waiting for Op id:{}'.format(self.id))
