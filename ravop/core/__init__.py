@@ -8,6 +8,8 @@ import numpy as np
 import speedtest
 import pickle as pkl
 
+from terminaltables import AsciiTable
+
 from .ftp_client import get_client, check_credentials
 from ..config import RAVENVERSE_FTP_HOST
 from ..globals import globals as g
@@ -126,18 +128,29 @@ def fetch_persisting_op(op_name):
             os._exit(1)
 
         res = res.json()
-        file_name = res['file_name']
+
+        if "message" in res.keys():
+            print(res['message'])
+            sys.exit(1)
 
         # create folder if not exists
         if not os.path.exists("persisting_ops"):
             os.makedirs("persisting_ops")
 
-        local_file_path = 'persisting_ops/{}.pkl'.format(op_name)
-        ftp_client.download(local_file_path, file_name)
-        with open(local_file_path, 'rb') as f:
-            value = pkl.load(f)
-        return value
-        # return res['value']
+        if 'aggregated_output' in res.keys():
+            result = res['aggregated_output']
+            with open('persisting_ops/' + op_name + '.pkl', 'wb') as f:
+                pkl.dump(result, f)
+            return result
+        else:
+            file_name = res['file_name']
+
+            local_file_path = 'persisting_ops/{}.pkl'.format(op_name)
+            ftp_client.download(local_file_path, file_name)
+            with open(local_file_path, 'rb') as f:
+                value = pkl.load(f)
+            return value
+            # return res['value']
     else:
         g.logger.debug("Error: Operator Name not Provided")
         return "Error: Operator Name not Provided"
@@ -218,6 +231,24 @@ def activate():
         os._exit(1)
     return res.json()['message']
 
+def get_my_graphs():
+    # Get graphs
+    headers = {"token": os.environ.get("TOKEN")}
+    my_graphs_endpoint = f"graph/all/"
+    r = make_request(my_graphs_endpoint, "get")
+
+    if r.status_code != 200:
+        print("Error:{}".format(r.text))
+        return None
+
+    graphs = r.json()
+    table_data = [["Id", "Name", "Approach", "Algorithm", "Rules", "Status", "Cost"]]
+    for graph in graphs:
+        table_data.append([graph['id'], graph['name'], graph['approach'], graph['algorithm'], graph['rules'],
+                           graph['status'], str(graph['cost'])+" Tokens"])
+    print("Graphs:\n", AsciiTable(table_data).table)
+
+    return graphs
 
 def flush():
     """
@@ -380,7 +411,7 @@ def __create_math_op(*args, **kwargs):
     op_id = chunk_id
     op_payload["id"] = op_id
     op_chunks.append(op_payload)
-    if op_id % chunk_threshold == 0:
+    if len(op_chunks) >= chunk_threshold:# op_id % chunk_threshold == 0:
         # print("\nChunking...")
         res = make_request("op_chunk/create/", "post", op_chunks)
         chunk_to_table_mapping = res.json()
@@ -494,12 +525,6 @@ class Op(ParentClass):
                     self.__dict__[k] = v
 
                 op_chunks.append(info)
-                if info['id'] % chunk_threshold == 0:
-                    res = make_request("op_chunk/create/", "post", op_chunks) 
-                    chunk_to_table_mapping = res.json()
-                    global_table_ids = {**global_table_ids, **chunk_to_table_mapping}
-                    op_chunks = []
-                # super().__init__(id, **info)
 
     def wait_till_computed(self):
         g.logger.debug('Waiting for Op id:{}'.format(self.id))

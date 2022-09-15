@@ -112,6 +112,28 @@ class Operators(object):
     RANDOM_FOREST_CLASSIFIER = "random_forest_classifier"
     RANDOM_FOREST_REGRESSOR = "random_forest_regressor"
 
+    FORWARD_PASS_DENSE = "forward_pass_dense"
+    BACKWARD_PASS_DENSE = "backward_pass_dense"
+    FORWARD_PASS_BATCHNORM = "forward_pass_batchnorm"
+    BACKWARD_PASS_BATCHNORM = "backward_pass_batchnorm"
+    FORWARD_PASS_DROPOUT = "forward_pass_dropout"
+    BACKWARD_PASS_DROPOUT = "backward_pass_dropout"
+    FORWARD_PASS_ACTIVATION = "forward_pass_activation"
+    BACKWARD_PASS_ACTIVATION = "backward_pass_activation"
+    FORWARD_PASS_CONV2D = "forward_pass_conv2d"
+    BACKWARD_PASS_CONV2D = "backward_pass_conv2d"
+    FORWARD_PASS_FLATTEN = "forward_pass_flatten"
+    BACKWARD_PASS_FLATTEN = "backward_pass_flatten"
+    FORWARD_PASS_MAXPOOL2D = "forward_pass_maxpool2d"
+    BACKWARD_PASS_MAXPOOL2D = "backward_pass_maxpool2d"
+
+    SQUARE_LOSS = "square_loss"
+    SQUARE_LOSS_GRADIENT = "square_loss_gradient"
+    CROSS_ENTROPY_LOSS = "cross_entropy_loss"
+    CROSS_ENTROPY_GRADIENT = "cross_entropy_gradient"
+    CROSS_ENTROPY_ACCURACY = "cross_entropy_accuracy"
+
+
     # Data Preprocessing
     ONE_HOT_ENCODING = "one_hot_encoding"
 
@@ -221,6 +243,27 @@ functions = {'lin': Operators.LINEAR,
              'decision_tree_regressor': Operators.DECISION_TREE_REGRESSOR,
              'random_forest_classifier': Operators.RANDOM_FOREST_CLASSIFIER,
              'random_forest_regressor': Operators.RANDOM_FOREST_REGRESSOR,
+
+             'forward_pass_dense': Operators.FORWARD_PASS_DENSE,
+             'backward_pass_dense': Operators.BACKWARD_PASS_DENSE,
+             'forward_pass_batchnorm': Operators.FORWARD_PASS_BATCHNORM,
+             'backward_pass_batchnorm': Operators.BACKWARD_PASS_BATCHNORM,
+             'forward_pass_dropout': Operators.FORWARD_PASS_DROPOUT,
+             'backward_pass_dropout': Operators.BACKWARD_PASS_DROPOUT,
+             'forward_pass_activation': Operators.FORWARD_PASS_ACTIVATION,
+             'backward_pass_activation': Operators.BACKWARD_PASS_ACTIVATION,
+             'forward_pass_conv2d': Operators.FORWARD_PASS_CONV2D,
+             'backward_pass_conv2d': Operators.BACKWARD_PASS_CONV2D,
+             'forward_pass_flatten': Operators.FORWARD_PASS_FLATTEN,
+             'backward_pass_flatten': Operators.BACKWARD_PASS_FLATTEN,
+             'forward_pass_maxpool2d': Operators.FORWARD_PASS_MAXPOOL2D,
+             'backward_pass_maxpool2d': Operators.BACKWARD_PASS_MAXPOOL2D,
+
+             'square_loss': Operators.SQUARE_LOSS,
+             'square_loss_gradient': Operators.SQUARE_LOSS_GRADIENT,
+             'cross_entropy_loss': Operators.CROSS_ENTROPY_LOSS,
+             'cross_entropy_gradient': Operators.CROSS_ENTROPY_GRADIENT,
+             'cross_entropy_accuracy': Operators.CROSS_ENTROPY_ACCURACY,
              # Federated functions
 
              'federated_mean': Operators.FEDERATED_MEAN,
