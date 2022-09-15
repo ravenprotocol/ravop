@@ -104,22 +104,29 @@ def fetch_persisting_op(op_name):
             os._exit(1)
 
         res = res.json()
+
         if "message" in res.keys():
             print(res['message'])
             sys.exit(1)
-            
-        file_name = res['file_name']
 
         # create folder if not exists
         if not os.path.exists("persisting_ops"):
             os.makedirs("persisting_ops")
 
-        local_file_path = 'persisting_ops/{}.pkl'.format(op_name)
-        ftp_client.download(local_file_path, file_name)
-        with open(local_file_path, 'rb') as f:
-            value = pkl.load(f)
-        return value
-        # return res['value']
+        if 'aggregated_output' in res.keys():
+            result = res['aggregated_output']
+            with open('persisting_ops/' + op_name + '.pkl', 'wb') as f:
+                pkl.dump(result, f)
+            return result
+        else:
+            file_name = res['file_name']
+
+            local_file_path = 'persisting_ops/{}.pkl'.format(op_name)
+            ftp_client.download(local_file_path, file_name)
+            with open(local_file_path, 'rb') as f:
+                value = pkl.load(f)
+            return value
+            # return res['value']
     else:
         g.logger.debug("Error: Operator Name not Provided")
         return "Error: Operator Name not Provided"
