@@ -9,9 +9,10 @@ import speedtest
 import pickle as pkl
 
 from terminaltables import AsciiTable
+from zipfile import ZipFile
 
 from .ftp_client import get_client, check_credentials
-from ..config import RAVENVERSE_FTP_HOST
+from ..config import RAVENVERSE_FTP_HOST, TEMP_FILES_PATH
 from ..globals import globals as g
 from ..strings import OpTypes, NodeTypes, functions, OpStatus
 from ..utils import make_request, convert_to_ndarray, dump_data
@@ -50,18 +51,22 @@ def initialize(ravenverse_token):  # , username):
 
     try:
         if RAVENVERSE_FTP_HOST != "localhost" and RAVENVERSE_FTP_HOST != "0.0.0.0":
-            wifi = speedtest.Speedtest()
-            upload_speed = int(wifi.upload())
-            upload_speed = upload_speed / 8
-            if upload_speed <= 3000000:
-                upload_multiplier = 1
-            elif upload_speed < 80000000:
-                upload_multiplier = int((upload_speed / 80000000) * 1000)
-            else:
-                upload_multiplier = 1000
+            # wifi = speedtest.Speedtest()
+            # wifi.get_servers([])
+            # wifi.get_best_server()
+            # upload_speed = int(wifi.upload())
+            # upload_speed = upload_speed / 8
+            # if upload_speed <= 3000000:
+            #     upload_multiplier = 1
+            # elif upload_speed < 80000000:
+            #     upload_multiplier = int((upload_speed / 80000000) * 1000)
+            # else:
+            #     upload_multiplier = 1000
+
+            # Speedtest to calculate upload multiplier
+            upload_multiplier = test_speed()
 
             g.ftp_upload_blocksize = 8192 * upload_multiplier
-
         else:
             g.ftp_upload_blocksize = 8192 * 1000
     except Exception as e:
@@ -88,6 +93,26 @@ def initialize(ravenverse_token):  # , username):
         g.is_activated = True
     else:
         g.is_activated = False
+
+
+def test_speed():
+    try:
+        wifi = speedtest.Speedtest()
+        wifi.get_servers([])
+        wifi.get_best_server()
+        upload_speed = int(wifi.upload())
+        upload_speed = upload_speed / 8
+        if upload_speed <= 3000000:
+            upload_multiplier = 1
+        elif upload_speed < 80000000:
+            upload_multiplier = int((upload_speed / 80000000) * 1000)
+        else:
+            upload_multiplier = 1000
+    except Exception as e:
+        g.logger.debug("Error in speedtest:{}".format(str(e)))
+        upload_multiplier = 1
+
+    return upload_multiplier
 
 
 def fetch_persisting_op(op_name):
@@ -175,7 +200,12 @@ def activate():
     """Activate the graph"""
     global persist_ops_queue, op_chunks, global_table_ids
 
-    if len(op_chunks) > 0:        
+    if len(op_chunks) > 0:   
+        zip_file_path = TEMP_FILES_PATH + '/chunk_data.zip'
+        if os.path.exists(zip_file_path):  
+            ftp_client.upload(zip_file_path, os.path.basename(zip_file_path))
+            os.remove(zip_file_path)
+
         res = make_request("op_chunk/create/", "post", op_chunks) 
         chunk_to_table_mapping = res.json()
         global_table_ids = {**global_table_ids, **chunk_to_table_mapping}
@@ -389,6 +419,10 @@ def __create_math_op(*args, **kwargs):
     op_chunks.append(op_payload)
     if len(op_chunks) >= chunk_threshold:# op_id % chunk_threshold == 0:
         # print("\nChunking...")
+        zip_file_path = TEMP_FILES_PATH + '/chunk_data.zip'
+        ftp_client.upload(zip_file_path, os.path.basename(zip_file_path))
+        os.remove(zip_file_path)
+
         res = make_request("op_chunk/create/", "post", op_chunks)
         chunk_to_table_mapping = res.json()
         global_table_ids = {**global_table_ids, **chunk_to_table_mapping}
@@ -489,7 +523,7 @@ class Op(ParentClass):
             outputs = kwargs.get("outputs", None)
             operator = kwargs.get("operator", None)
 
-            if (inputs is not None or outputs is not None) and operator is not None:
+            if operator is not None: #(inputs is not None or outputs is not None) and
                 info = self.extract_info(**kwargs)
                 info['graph_id'] = g.graph_id
                 info['subgraph_id'] = 0  # g.sub_graph_id
@@ -539,9 +573,10 @@ class Op(ParentClass):
         inputs = kwargs.get("inputs", None)
         outputs = kwargs.get("outputs", None)
         operator = kwargs.get("operator", None)
+        dtype = kwargs.get("dtype", None)
 
         # Figure out node type
-        if inputs is None and outputs is not None:
+        if inputs is None:
             node_type = NodeTypes.INPUT
         elif inputs is not None and outputs is None:
             node_type = NodeTypes.MIDDLE
@@ -558,10 +593,10 @@ class Op(ParentClass):
         else:
             op_type = OpTypes.OTHER
 
-        if outputs is None:
-            status = OpStatus.PENDING
-        else:
+        if outputs is not None or operator == 'lin':
             status = OpStatus.COMPUTED
+        else:
+            status = OpStatus.PENDING
 
         inputs = json.dumps(inputs)
         outputs = json.dumps(outputs)
@@ -572,7 +607,8 @@ class Op(ParentClass):
             "status": status,
             "inputs": inputs,
             "outputs": outputs,
-            "operator": operator
+            "operator": operator,
+            "dtype": dtype
         }
 
     def get_output(self):
@@ -702,15 +738,28 @@ class Scalar(Op):
 
         elif value is not None:
             # Create data and then op
-
-            data = Data(value=value)
-            if data.valid():
-                super().__init__(
-                    operator="lin", inputs=None, outputs=[data.id], **kwargs
+            value = convert_to_ndarray(value)
+            kwargs['dtype'] = str(value.dtype)
+            super().__init__(
+                    operator="lin", inputs=None, **kwargs
                 )
-            else:
-                self.__dict__['_status_code'] = 400
-                self.__dict__['_error'] = "Invalid data"
+            file_path = dump_data(self.id, self.graph_id, value)
+
+            zip_file_path = TEMP_FILES_PATH + '/chunk_data.zip'
+            with ZipFile(zip_file_path, 'a') as zipObj2:
+                zipObj2.write(file_path, os.path.basename(file_path))
+
+            
+
+
+            # data = Data(value=value)
+            # if data.valid():
+            #     super().__init__(
+            #         operator="lin", inputs=None, outputs=[data.id], **kwargs
+            #     )
+            # else:
+            #     self.__dict__['_status_code'] = 400
+            #     self.__dict__['_error'] = "Invalid data"
 
     def __str__(self):
         return "Scalar Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
@@ -746,14 +795,27 @@ class Tensor(Op):
 
         elif value is not None:
             # Create data and then op
-            data = Data(value=value)
-            if data.valid():
-                super().__init__(
-                    operator="lin", inputs=None, outputs=[data.id], **kwargs
+            value = convert_to_ndarray(value)
+            kwargs['dtype'] = str(value.dtype)
+            super().__init__(
+                    operator="lin", inputs=None, **kwargs
                 )
-            else:
-                self.__dict__['_status_code'] = 400
-                self.__dict__['_error'] = "Invalid data"
+            file_path = dump_data(self.id, self.graph_id, value)
+
+            zip_file_path = TEMP_FILES_PATH + '/chunk_data.zip'
+            with ZipFile(zip_file_path, 'a') as zipObj2:
+                zipObj2.write(file_path, os.path.basename(file_path))
+
+            
+
+            # data = Data(value=value)
+            # if data.valid():
+            #     super().__init__(
+            #         operator="lin", inputs=None, outputs=[data.id], **kwargs
+            #     )
+            # else:
+            #     self.__dict__['_status_code'] = 400
+            #     self.__dict__['_error'] = "Invalid data"
 
     def __str__(self):
         return "Tensor Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}".format(
@@ -815,7 +877,7 @@ class Data(ParentClass):
                     kwargs['value'] = value.tolist()
                     kwargs['username'] = ftp_username
 
-        super().__init__(id, **kwargs)
+        # super().__init__(id, **kwargs)
         # g.logger.debug("Username and password: ", ftp_username, ftp_password)
         # g.logger.debug("Check ftp creds: ",check_credentials(ftp_username,ftp_password))
 
