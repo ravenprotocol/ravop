@@ -84,11 +84,11 @@ def convert_ndarray_to_str(x):
     return str(x.tolist())
 
 
-def dump_data(data_id, value):
+def dump_data(data_id, graph_id, value):
     """
     Dump ndarray to file
     """
-    file_path = os.path.join(TEMP_FILES_PATH, "data_{}.pkl".format(data_id))
+    file_path = os.path.join(TEMP_FILES_PATH, "data_{}_{}.pkl".format(data_id, graph_id))
     if os.path.exists(file_path):
         os.remove(file_path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
