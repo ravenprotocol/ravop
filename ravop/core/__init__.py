@@ -749,7 +749,7 @@ class Scalar(Op):
             with ZipFile(zip_file_path, 'a') as zipObj2:
                 zipObj2.write(file_path, os.path.basename(file_path))
 
-            
+            os.remove(file_path)
 
 
             # data = Data(value=value)
@@ -806,7 +806,7 @@ class Tensor(Op):
             with ZipFile(zip_file_path, 'a') as zipObj2:
                 zipObj2.write(file_path, os.path.basename(file_path))
 
-            
+            os.remove(file_path)
 
             # data = Data(value=value)
             # if data.valid():
