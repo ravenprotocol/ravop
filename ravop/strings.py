@@ -138,7 +138,8 @@ class Operators(object):
     ONE_HOT_ENCODING = "one_hot_encoding"
 
     SET_VALUE = "set_value"
-
+    GET_LAYER_RESULTS="get_layer_result"
+    
     FEDERATED_MEAN = "federated_mean"
     FEDERATED_VARIANCE = "federated_variance"
     FEDERATED_STANDARD_DEVIATION = "federated_standard_deviation"
@@ -243,6 +244,7 @@ functions = {'lin': Operators.LINEAR,
              'decision_tree_regressor': Operators.DECISION_TREE_REGRESSOR,
              'random_forest_classifier': Operators.RANDOM_FOREST_CLASSIFIER,
              'random_forest_regressor': Operators.RANDOM_FOREST_REGRESSOR,
+             'get_layer_result':Operators.GET_LAYER_RESULTS,
 
              'forward_pass_dense': Operators.FORWARD_PASS_DENSE,
              'backward_pass_dense': Operators.BACKWARD_PASS_DENSE,
@@ -269,6 +271,7 @@ functions = {'lin': Operators.LINEAR,
              'federated_mean': Operators.FEDERATED_MEAN,
              'federated_variance': Operators.FEDERATED_VARIANCE,
              'federated_standard_deviation': Operators.FEDERATED_STANDARD_DEVIATION,
+             
              }
 
 
