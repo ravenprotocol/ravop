@@ -33,7 +33,7 @@ def initialize(ravenverse_token):  # , username):
     g.logger.debug('Checking version of Ravop...')
     if not isLatestVersion('ravop'):
         g.logger.debug('Please update Ravop to the latest version.')
-        sys.exit(1)
+        # sys.exit(1)
 
     g.logger.debug("Initializing...")
 
@@ -84,7 +84,7 @@ def initialize(ravenverse_token):  # , username):
     ftp_password = password
 
     g.is_initialized = True
-    g.logger.debug("\nInitialized Successfully!\n")
+    g.logger.debug("Initialized Successfully!")
 
     current_graph_id = make_request("ravop/developer/get_current_graph_id/", "get").json()
     if 'graph_id' in current_graph_id.keys():
@@ -171,7 +171,6 @@ def execute():
         os._exit(1)
 
     g.logger.debug(res.json()['message'])
-    g.logger.debug("")
     return res.json()['message']
 
 
@@ -189,8 +188,9 @@ def track_progress():
             if res.status_code == 200:
                 res = res.json()
             else:
-                g.logger.debug("Error: ", res.text)
-                os._exit(1)
+                res = res.json()
+                print("\nError: ", res['message'])
+                sys.exit(1)
 
             progress = int(res['progress'])
             bar(progress / 100)
@@ -198,7 +198,7 @@ def track_progress():
                 break
             time.sleep(0.5)
 
-    g.logger.debug('\nGraph Computed Successfully!')
+    print('\nGraph Computed Successfully!')
 
 
 def activate():
@@ -325,7 +325,8 @@ def __create_math_op(*args, **kwargs):
     for key, value in kwargs.items():
         metadata = {}
         if key in ["node_type", "op_type", "status", "name", "operator"]:
-            continue
+            continue   
+
         if (isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor)):
             relative_param_id = value.id
             global_param_id = global_table_ids.get(str(relative_param_id), None)
@@ -435,7 +436,7 @@ def __create_math_op(*args, **kwargs):
     
 
     # op = op.json()
-    op = Op(id=op_id)#op["id"])
+    op = Op(id=op_id, operator=operator)#op["id"])
     if g.eager_mode:
         op.wait_till_computed()
     return op
@@ -452,6 +453,8 @@ class ParentClass(object):
                     if id is not None:
                         # self.__get(endpoint=self.get_endpoint)
                         self.id = id
+                        for key, value in kwargs.items():
+                            setattr(self, key, value)
                     else:
                         self.__create(self.create_endpoint, **kwargs)
                 else:
@@ -521,7 +524,7 @@ class Op(ParentClass):
         self.create_endpoint = f"op/create/"
 
         if id is not None:
-            super().__init__(id=id)
+            super().__init__(id=id, **kwargs)
         else:
 
             inputs = kwargs.get("inputs", None)
@@ -633,16 +636,16 @@ class Op(ParentClass):
         data = Data(id=data_id)
         return data
 
-    def __str__(self):
-        return (
-            "Op:\nId:{}\nName:{}\nType:{}\nOperator:{}\n\nStatus:{}\n".format(
-                self.id,
-                self.name,
-                self.op_type,
-                self.operator,
-                self.status,
-            )
-        )
+    # def __str__(self):
+    #     return (
+    #         "Op:\nId:{}\nName:{}\nType:{}\nOperator:{}\n\nStatus:{}\n".format(
+    #             self.id,
+    #             self.name,
+    #             self.op_type,
+    #             self.operator,
+    #             self.status,
+    #         )
+    #     )
 
     # def __call__(self, *args, **kwargs):
     #     global compile
@@ -766,10 +769,10 @@ class Scalar(Op):
             #     self.__dict__['_status_code'] = 400
             #     self.__dict__['_error'] = "Invalid data"
 
-    def __str__(self):
-        return "Scalar Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
-            self.id, self.get_output(), self.status, self.get_dtype
-        )
+    # def __str__(self):
+    #     return "Scalar Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
+    #         self.id, self.get_output(), self.status, self.get_dtype
+    #     )
 
     def __float__(self):
         return float(self.get_output())
@@ -822,10 +825,10 @@ class Tensor(Op):
             #     self.__dict__['_status_code'] = 400
             #     self.__dict__['_error'] = "Invalid data"
 
-    def __str__(self):
-        return "Tensor Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}".format(
-            self.id, self.get_output(), self.status, self.get_dtype
-        )
+    # def __str__(self):
+    #     return "Tensor Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}".format(
+    #         self.id, self.get_output(), self.status, self.get_dtype
+    #     )
 
 
 class File(Op):
@@ -843,10 +846,10 @@ class File(Op):
     def shape(self):
         return None
 
-    def __str__(self):
-        return "File Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
-            self.id, self.get_output(), self.status, self.dtype
-        )
+    # def __str__(self):
+    #     return "File Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
+    #         self.id, self.get_output(), self.status, self.dtype
+    #     )
 
     def __call__(self, *args, **kwargs):
         return self.get_output()
