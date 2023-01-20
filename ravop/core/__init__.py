@@ -15,7 +15,7 @@ from .ftp_client import get_client, check_credentials
 from ..config import RAVENVERSE_FTP_HOST, TEMP_FILES_PATH
 from ..globals import globals as g
 from ..strings import OpTypes, NodeTypes, functions, OpStatus
-from ..utils import make_request, convert_to_ndarray, dump_data
+from ..utils import make_request, convert_to_ndarray, dump_data, isLatestVersion
 
 ftp_client = None
 ftp_username = None
@@ -30,6 +30,11 @@ persist_ops_queue = []
 
 
 def initialize(ravenverse_token):  # , username):
+    g.logger.debug('Checking version of Ravop...')
+    if not isLatestVersion('ravop'):
+        g.logger.debug('Please update Ravop to the latest version.')
+        sys.exit(1)
+
     g.logger.debug("Initializing...")
 
     global ftp_client, ftp_username, ftp_password
