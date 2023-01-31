@@ -33,7 +33,7 @@ def initialize(ravenverse_token):  # , username):
     g.logger.debug('Checking version of Ravop...')
     if not isLatestVersion('ravop'):
         g.logger.debug('Please update Ravop to the latest version.')
-        # sys.exit(1)
+        sys.exit(1)
 
     g.logger.debug("Initializing...")
 
@@ -636,16 +636,16 @@ class Op(ParentClass):
         data = Data(id=data_id)
         return data
 
-    # def __str__(self):
-    #     return (
-    #         "Op:\nId:{}\nName:{}\nType:{}\nOperator:{}\n\nStatus:{}\n".format(
-    #             self.id,
-    #             self.name,
-    #             self.op_type,
-    #             self.operator,
-    #             self.status,
-    #         )
-    #     )
+    def __str__(self):
+        return (
+            "Op:\nId:{}\nName:{}\nType:{}\nOperator:{}\n\nStatus:{}\n".format(
+                self.id,
+                self.name,
+                self.op_type,
+                self.operator,
+                self.status,
+            )
+        )
 
     # def __call__(self, *args, **kwargs):
     #     global compile
@@ -769,10 +769,10 @@ class Scalar(Op):
             #     self.__dict__['_status_code'] = 400
             #     self.__dict__['_error'] = "Invalid data"
 
-    # def __str__(self):
-    #     return "Scalar Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
-    #         self.id, self.get_output(), self.status, self.get_dtype
-    #     )
+    def __str__(self):
+        return "Scalar Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
+            self.id, self.get_output(), self.status, self.get_dtype
+        )
 
     def __float__(self):
         return float(self.get_output())
@@ -825,10 +825,10 @@ class Tensor(Op):
             #     self.__dict__['_status_code'] = 400
             #     self.__dict__['_error'] = "Invalid data"
 
-    # def __str__(self):
-    #     return "Tensor Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}".format(
-    #         self.id, self.get_output(), self.status, self.get_dtype
-    #     )
+    def __str__(self):
+        return "Tensor Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}".format(
+            self.id, self.get_output(), self.status, self.get_dtype
+        )
 
 
 class File(Op):
@@ -846,10 +846,10 @@ class File(Op):
     def shape(self):
         return None
 
-    # def __str__(self):
-    #     return "File Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
-    #         self.id, self.get_output(), self.status, self.dtype
-    #     )
+    def __str__(self):
+        return "File Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}\n".format(
+            self.id, self.get_output(), self.status, self.dtype
+        )
 
     def __call__(self, *args, **kwargs):
         return self.get_output()
