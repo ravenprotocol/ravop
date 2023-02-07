@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='ravop',
-    version='0.10',
+    version='0.11',
     license='MIT',
     author="Raven Protocol",
     author_email='kailash@ravenprotocol.com',
