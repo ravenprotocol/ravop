@@ -34,7 +34,12 @@ def initialize(ravenverse_token):  # , username):
     g.logger.debug('Checking version of Ravop...')
     if not isLatestVersion('ravop'):
         g.logger.debug('Please update Ravop to the latest version.')
-        sys.exit(1)
+        # sys.exit(1)
+
+    dir = TEMP_FILES_PATH
+    if os.path.exists(dir):
+        for f in os.listdir(dir):
+            os.remove(os.path.join(dir, f))
 
     g.logger.debug("Initializing...")
 
@@ -90,7 +95,7 @@ def initialize(ravenverse_token):  # , username):
     current_graph_id = make_request("ravop/developer/get_current_graph_id/", "get").json()
     if 'graph_id' in current_graph_id.keys():
         g.graph_id = current_graph_id['graph_id']
-        g.logger.debug("Your Current Graph ID:{}".format(g.graph_id))
+        g.logger.debug("Your Current Graph ID:{}".format(g.graph_id + 1))
     else:
         g.logger.debug("No Currently Active Graph! ")
 
