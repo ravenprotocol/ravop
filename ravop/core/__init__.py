@@ -7,6 +7,7 @@ from functools import wraps
 import numpy as np
 import speedtest
 import pickle as pkl
+import torch
 
 from terminaltables import AsciiTable
 from zipfile import ZipFile
@@ -151,10 +152,18 @@ def fetch_persisting_op(op_name):
         else:
             file_name = res['file_name']
 
-            local_file_path = 'persisting_ops/{}.pkl'.format(op_name)
-            ftp_client.download(local_file_path, file_name)
-            with open(local_file_path, 'rb') as f:
-                value = pkl.load(f)
+            file_pre, file_ext = os.path.splitext(file_name)
+
+            if file_ext == '.pt':
+                local_file_path = 'persisting_ops/{}.pt'.format(op_name)
+                ftp_client.download(local_file_path, file_name)
+                value = torch.jit.load(local_file_path)
+            else:
+                local_file_path = 'persisting_ops/{}.pkl'.format(op_name)
+                ftp_client.download(local_file_path, file_name)
+                with open(local_file_path, 'rb') as f:
+                    value = pkl.load(f)
+            
             return value
             # return res['value']
     else:
@@ -162,9 +171,9 @@ def fetch_persisting_op(op_name):
         return "Error: Operator Name not Provided"
 
 
-def execute():
+def execute(participants = 1):
     """Execute the graph"""
-    execute_endpoint = f"graph/execute/"
+    execute_endpoint = f"graph/execute/?participants={participants}"
     res = make_request(execute_endpoint, "get")
     if res.status_code == 400:
         g.logger.debug("Error:{}".format(res.text))
@@ -235,6 +244,7 @@ def activate():
     g.logger.debug('\n')
     g.logger.debug(res.json()['message'])
     g.logger.debug('Cost: {} RAVEN TOKENS'.format(res.json()['cost']))
+    g.logger.debug('Max Participants: {}'.format(res.json()['max_participants']))
     if res.status_code == 200:
         g.is_activated = True
     else:
@@ -294,6 +304,14 @@ def t(value, dtype="ndarray", **kwargs):
     elif dtype == "file":
         return File(value=value, dtype=dtype, **kwargs)
 
+def model(model_path, **kwargs):
+    print("Model path: ", model_path, os.path.exists(model_path))
+    if os.path.exists(model_path):
+        print("Model exists")
+        return Model(model_path, **kwargs)
+    else:
+        g.logger.debug("Error: Invalid model file path")
+        os._exit(1)
 
 def create_op(operator=None, *args, **params):
     return __create_math_op(operator=operator, *args, **params)
@@ -327,7 +345,7 @@ def __create_math_op(*args, **kwargs):
         if key in ["node_type", "op_type", "status", "name", "operator"]:
             continue   
 
-        if (isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor)):
+        if (isinstance(value, Op) or isinstance(value, Data) or isinstance(value, Scalar) or isinstance(value, Tensor) or isinstance(value, Model)):
             relative_param_id = value.id
             global_param_id = global_table_ids.get(str(relative_param_id), None)
             if global_param_id is not None:
@@ -566,7 +584,7 @@ class Op(ParentClass):
     def get_status(self):
         return make_request(f"op/status/?id={self.id}", "get").json()['op_status']
 
-    def persist_op(self, name=None):
+    def persist_op(self, name=None, save_model=False):
         """Persist the Op"""
         if name is None:
             raise Exception("Enter a name for persisting Op")
@@ -575,7 +593,10 @@ class Op(ParentClass):
 
         g.logger.debug("")
         g.logger.debug("Persisting Op: {}".format(name))
-        persist_ops_queue.append({'id':self.id, 'name':name})
+        if save_model:
+            persist_ops_queue.append({'id':self.id, 'name':name, 'save_model':'True'})
+        else:
+            persist_ops_queue.append({'id':self.id, 'name':name})
 
     def extract_info(self, **kwargs):
         inputs = kwargs.get("inputs", None)
@@ -601,7 +622,7 @@ class Op(ParentClass):
         else:
             op_type = OpTypes.OTHER
 
-        if outputs is not None or operator == 'lin':
+        if outputs is not None or operator == 'lin' or operator == 'pytorch_model':
             status = OpStatus.COMPUTED
         else:
             status = OpStatus.PENDING
@@ -827,6 +848,60 @@ class Tensor(Op):
 
     def __str__(self):
         return "Tensor Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}".format(
+            self.id, self.get_output(), self.status, self.get_dtype
+        )
+
+class Model(Op):
+    """
+    It supports:
+    1. list
+    2. ndarray
+    3. string(list)
+    """
+
+    def __init__(self, value=None, id=None, data=None, **kwargs):
+        if id is not None:
+            # Get
+            super().__init__(id=id)
+
+        elif data is not None:
+            if data.valid():
+                # Create scalar
+                super().__init__(
+                    operator="lin", inputs=None, outputs=[data.id], **kwargs
+                )
+            else:
+                self.__dict__['_status_code'] = 400
+                self.__dict__['_error'] = "Invalid data"
+
+        elif value is not None:
+            # Create data and then op
+            # value = convert_to_ndarray(value)
+            kwargs['dtype'] = "pytorch_file"
+            super().__init__(
+                    operator="pytorch_model", inputs=None, **kwargs
+                )
+            file_path = value
+
+            print("Id self: ", self.id)
+
+            zip_file_path = TEMP_FILES_PATH + '/chunk_data.zip'
+            with ZipFile(zip_file_path, 'a') as zipObj2:
+                zipObj2.write(file_path, 'data_{}_{}.pt'.format(self.id, self.graph_id))
+
+            # os.remove(file_path)
+
+            # data = Data(value=value)
+            # if data.valid():
+            #     super().__init__(
+            #         operator="lin", inputs=None, outputs=[data.id], **kwargs
+            #     )
+            # else:
+            #     self.__dict__['_status_code'] = 400
+            #     self.__dict__['_error'] = "Invalid data"
+
+    def __str__(self):
+        return "Model Op:\nId:{}\nOutput:{}\nStatus:{}\nDtype:{}".format(
             self.id, self.get_output(), self.status, self.get_dtype
         )
 

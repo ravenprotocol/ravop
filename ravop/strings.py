@@ -175,6 +175,10 @@ class Operators(object):
     FEDERATED_VARIANCE = "federated_variance"
     FEDERATED_STANDARD_DEVIATION = "federated_standard_deviation"
 
+    #Pytorch model
+    PYTORCH_MODEL = "pytorch_model"
+    FORWARD_PASS = "forward_pass"
+
 
 class TFJSOperators(object):
     SIGMOID = "sigmoid"
@@ -334,6 +338,11 @@ functions = {'lin': Operators.LINEAR,
              'federated_mean': Operators.FEDERATED_MEAN,
              'federated_variance': Operators.FEDERATED_VARIANCE,
              'federated_standard_deviation': Operators.FEDERATED_STANDARD_DEVIATION,
+
+             #Pytorch model
+             'pytorch_model': Operators.PYTORCH_MODEL,
+             'forward_pass': Operators.FORWARD_PASS
+
              }
 
 
