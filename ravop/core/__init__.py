@@ -12,7 +12,7 @@ import torch
 from terminaltables import AsciiTable
 from zipfile import ZipFile
 
-from .ftp_client import get_client, check_credentials
+from .ftp_client import get_client
 from ..config import RAVENVERSE_FTP_HOST, TEMP_FILES_PATH
 from ..globals import globals as g
 from ..strings import OpTypes, NodeTypes, functions, OpStatus
@@ -34,7 +34,7 @@ def initialize(ravenverse_token):  # , username):
     g.logger.debug('Checking version of Ravop...')
     if not isLatestVersion('ravop'):
         g.logger.debug('Please update Ravop to the latest version.')
-        # sys.exit(1)
+        sys.exit(1)
 
     dir = TEMP_FILES_PATH
     if os.path.exists(dir):
@@ -62,18 +62,6 @@ def initialize(ravenverse_token):  # , username):
 
     try:
         if RAVENVERSE_FTP_HOST != "localhost" and RAVENVERSE_FTP_HOST != "0.0.0.0":
-            # wifi = speedtest.Speedtest()
-            # wifi.get_servers([])
-            # wifi.get_best_server()
-            # upload_speed = int(wifi.upload())
-            # upload_speed = upload_speed / 8
-            # if upload_speed <= 3000000:
-            #     upload_multiplier = 1
-            # elif upload_speed < 80000000:
-            #     upload_multiplier = int((upload_speed / 80000000) * 1000)
-            # else:
-            #     upload_multiplier = 1000
-
             # Speedtest to calculate upload multiplier
             upload_multiplier = test_speed()
 
@@ -941,12 +929,6 @@ class Data(ParentClass):
         self.get_endpoint = f"data/get/?id={id}"
         self.create_endpoint = f"data/create/"
 
-        # value = kwargs.get("value", None)
-        # if value is not None and isinstance(value, np.ndarray):
-        #     value = value.tolist()
-        #     kwargs['value'] = value
-        # else:
-        #     kwargs['value'] = value
         if id is None:
 
             if value is not None:
@@ -964,10 +946,6 @@ class Data(ParentClass):
                     kwargs['dtype'] = str(dtype)
                     kwargs['value'] = value.tolist()
                     kwargs['username'] = ftp_username
-
-        # super().__init__(id, **kwargs)
-        # g.logger.debug("Username and password: ", ftp_username, ftp_password)
-        # g.logger.debug("Check ftp creds: ",check_credentials(ftp_username,ftp_password))
 
         if id is None:
             if value is not None and byte_size > 0 * 1000000:

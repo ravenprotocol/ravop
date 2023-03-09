@@ -74,11 +74,6 @@ def copy_data(source, destination):
         print("Error occurred while copying file.")
 
 
-def inform():
-    socket_client = SocketClient(server_url=RAVENVERSE_URL).connect()
-    socket_client.emit("inform", data={"type": "event"}, namespace="/ravop")
-
-
 def make_request(endpoint, method, payload={}, headers=None):
     headers = {"token": g.ravenverse_token}
     if method == "post":
