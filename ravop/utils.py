@@ -8,7 +8,6 @@ import requests
 
 from .config import DATA_FILES_PATH, RAVENVERSE_URL, TEMP_FILES_PATH
 from .globals import globals as g
-from .socket_client import SocketClient
 
 import urllib.request
 from pip._internal.operations.freeze import freeze
