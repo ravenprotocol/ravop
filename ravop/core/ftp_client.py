@@ -2,6 +2,8 @@ from ftplib import FTP
 
 from ..config import RAVENVERSE_FTP_HOST
 from ..globals import globals as g
+from tqdm import tqdm
+import os
 
 
 class FTPClient:
@@ -15,7 +17,10 @@ class FTPClient:
         self.ftp.retrbinary('RETR ' + path, open(filename, 'wb').write)
 
     def upload(self, filename, path):
-        self.ftp.storbinary('STOR ' + path, open(filename, 'rb'), blocksize=g.ftp_upload_blocksize)
+        with open(filename, 'rb') as f:
+            filesize = os.path.getsize(filename)
+            with tqdm(unit = 'b', unit_scale = True, leave = False, miniters = 1, desc = 'Uploading Op Chunk', total = filesize) as tqdm_instance:
+                self.ftp.storbinary('STOR ' + path, f, blocksize=g.ftp_upload_blocksize, callback=lambda sent: tqdm_instance.update(len(sent)))
 
     def list_server_files(self):
         self.ftp.retrlines('LIST')
