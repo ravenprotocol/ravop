@@ -8,7 +8,6 @@ import requests
 
 from .config import DATA_FILES_PATH, RAVENVERSE_URL, TEMP_FILES_PATH
 from .globals import globals as g
-from .socket_client import SocketClient
 
 import urllib.request
 from pip._internal.operations.freeze import freeze
@@ -29,7 +28,7 @@ def isLatestVersion(pkgName):
     # print('Current version of '+pkgName+' is '+current_version)
     # print('Latest version of '+pkgName+' is '+latest_version)
 
-    return latest_version == current_version
+    return latest_version <= current_version
 
 def save_data_to_file(data_id, data):
     """
@@ -72,11 +71,6 @@ def copy_data(source, destination):
     # For other errors
     except:
         print("Error occurred while copying file.")
-
-
-def inform():
-    socket_client = SocketClient(server_url=RAVENVERSE_URL).connect()
-    socket_client.emit("inform", data={"type": "event"}, namespace="/ravop")
 
 
 def make_request(endpoint, method, payload={}, headers=None):

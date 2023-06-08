@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name='ravop',
-    version='0.10',
+    version='0.12',
     license='MIT',
     author="Raven Protocol",
     author_email='kailash@ravenprotocol.com',
@@ -23,6 +23,7 @@ setup(
         "requests==2.27.1",
         "python-dotenv==0.20.0",
         "speedtest-cli==2.1.3",
-        "alive-progress==2.4.1"
+        "alive-progress==2.4.1",
+        'tqdm'
     ]
 )
