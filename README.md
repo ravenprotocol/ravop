@@ -84,11 +84,9 @@ This function displays the cost of the graph and the maximum number of allowable
 On execution, the graph will be split into smaller subgraphs which will be distributed to the participating compute nodes in the network. The requester can also track the progress of the graph.
 
 ```python
-R.execute(participants=1)
+R.execute()
 R.track_progress()
 ```
-
-The ```participants``` parameter must be a number less than the maximum number of allowable Providers (displayed after activation). This will be the number of Providers allowed to participate in the graph. The computation will begin only once this number of Providers are actively participating in this graph. 
 
 ### Fetching Results
 
